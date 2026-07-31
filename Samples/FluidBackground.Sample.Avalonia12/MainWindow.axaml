@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:fa="clr-namespace:FluidBackground.Avalonia;assembly=FluidBackground.Avalonia"
-        x:Class="FluidBackground.Sample.MainWindow"
+        xmlns:fa="clr-namespace:FluidBackground.Avalonia12;assembly=FluidBackground.Avalonia12"
+        x:Class="FluidBackground.Sample.Avalonia12.MainWindow"
         Title="流体背景预览"
         Width="520" Height="580"
         d:DesignWidth="520" d:DesignHeight="580"
@@ -40,6 +40,7 @@
                         <ComboBoxItem>翡翠绿</ComboBoxItem>
                         <ComboBoxItem>极光</ComboBoxItem>
                         <ComboBoxItem>薰衣草</ComboBoxItem>
+                        <ComboBoxItem>樱花</ComboBoxItem>
                     </ComboBox>
                     
                     <!-- 第2行：动画模式 | 渲染模式 -->

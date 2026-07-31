@@ -41,6 +41,16 @@ public class SkiaRenderer : IFluidRenderer
         return bitmap;
     }
 
+    public void RenderToBitmap(double timeSeconds, int width, int height, SKBitmap target)
+    {
+        if (!IsAvailable)
+            throw new InvalidOperationException("渲染器未初始化或不可用");
+
+        using var canvas = new SKCanvas(target);
+        RenderToCanvas(canvas, timeSeconds, width, height);
+        canvas.Flush();
+    }
+
     public void RenderToCanvas(SKCanvas canvas, double timeSeconds, int width, int height)
     {
         if (!IsAvailable || _config == null)
@@ -97,7 +107,7 @@ public class SkiaRenderer : IFluidRenderer
         byte r = (byte)(Math.Clamp(color.X, 0, 1) * 255);
         byte g = (byte)(Math.Clamp(color.Y, 0, 1) * 255);
         byte b = (byte)(Math.Clamp(color.Z, 0, 1) * 255);
-        return (uint)(0xFF000000 | ((uint)r << 16) | ((uint)g << 8) | b);
+        return (uint)(0xFF000000 | ((uint)b << 16) | ((uint)g << 8) | r);
     }
 
     private float3 FluidEffect(float u, float v, float t)

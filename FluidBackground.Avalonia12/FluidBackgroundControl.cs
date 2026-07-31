@@ -11,7 +11,7 @@ using FluidBackground.Core.Models;
 using SkiaSharp;
 using System.Diagnostics;
 
-namespace FluidBackground.Avalonia;
+namespace FluidBackground.Avalonia12;
 
 /// <summary>
 /// Avalonia平台的流体背景控件

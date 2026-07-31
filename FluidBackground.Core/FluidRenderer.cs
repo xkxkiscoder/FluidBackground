@@ -126,6 +126,26 @@ public class FluidRenderer : IDisposable
     }
 
     /// <summary>
+    /// 渲染到现有的SKBitmap
+    /// </summary>
+    /// <param name="timeSeconds">当前时间（秒）</param>
+    /// <param name="width">宽度</param>
+    /// <param name="height">高度</param>
+    /// <param name="target">目标SKBitmap</param>
+    public void RenderToBitmap(double timeSeconds, int width, int height, SKBitmap target)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (width <= 0 || height <= 0)
+            throw new ArgumentException("宽度和高度必须大于0");
+
+        lock (_lock)
+        {
+            _renderer!.RenderToBitmap(timeSeconds, width, height, target);
+        }
+    }
+
+    /// <summary>
     /// 渲染到SKCanvas（用于适配层）
     /// </summary>
     public void RenderToCanvas(SKCanvas canvas, double timeSeconds, int width, int height)

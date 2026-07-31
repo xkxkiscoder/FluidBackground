@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace FluidBackground.Sample;
+namespace FluidBackground.Sample.Avalonia11;
 
 class Program
 {

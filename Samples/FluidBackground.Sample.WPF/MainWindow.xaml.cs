@@ -1,10 +1,8 @@
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Interactivity;
-using FluidBackground.Avalonia;
+using System.Windows;
+using System.Windows.Controls;
 using FluidBackground.Core.Models;
 
-namespace FluidBackground.Sample;
+namespace FluidBackground.Sample.WPF;
 
 public partial class MainWindow : Window
 {
@@ -43,7 +41,7 @@ public partial class MainWindow : Window
         RenderModeCombo.SelectionChanged += OnRenderModeChanged;
     }
 
-    private void OnColorChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnColorChanged(object sender, SelectionChangedEventArgs e)
     {
         var colors = ColorCombo.SelectedIndex switch
         {
@@ -82,12 +80,19 @@ public partial class MainWindow : Window
                 FluidColor.FromHex("#C4B5FD"),
                 FluidColor.FromHex("#DDD6FE")
             ],
+            5 => // 樱花
+            [
+                FluidColor.FromHex("#ED3A7C"),
+                FluidColor.FromHex("#FAB7A7"),
+                FluidColor.FromHex("#FDB5C4"),
+                FluidColor.FromHex("#FED6ED")
+            ],
             _ => FluidConfig.DefaultColors
         };
         UpdateConfig(c => c.Colors = colors);
     }
 
-    private void OnModeChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnModeChanged(object sender, SelectionChangedEventArgs e)
     {
         var mode = ModeCombo.SelectedIndex switch
         {
@@ -99,24 +104,24 @@ public partial class MainWindow : Window
         UpdateConfig(c => c.Mode = mode);
     }
 
-    private void OnSpeedChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    private void OnSpeedChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         UpdateConfig(c => c.Speed = (float)e.NewValue);
     }
 
-    private void OnIntensityChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    private void OnIntensityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         UpdateConfig(c => c.Intensity = (float)e.NewValue);
     }
 
-    private void OnQualityChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    private void OnQualityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         var quality = (float)e.NewValue;
         QualityLabel.Text = $"精度:{quality:F1}x";
         UpdateConfig(c => c.RenderQuality = quality);
     }
 
-    private void OnRenderModeChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnRenderModeChanged(object sender, SelectionChangedEventArgs e)
     {
         var mode = RenderModeCombo.SelectedIndex switch
         {

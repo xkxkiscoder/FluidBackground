@@ -243,6 +243,13 @@ void main()
         return bitmap;
     }
 
+    /// <inheritdoc/>
+    public void RenderToBitmap(double timeSeconds, int width, int height, SKBitmap target)
+    {
+        var pixels = RenderFrame(timeSeconds, width, height);
+        Marshal.Copy(pixels, 0, target.GetPixels(), pixels.Length);
+    }
+
     private void RenderScene(double timeSeconds, int width, int height)
     {
         _gl!.Clear(ClearBufferMask.ColorBufferBit);

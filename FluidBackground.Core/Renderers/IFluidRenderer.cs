@@ -44,6 +44,15 @@ public interface IFluidRenderer : IDisposable
     SKBitmap RenderToBitmap(double timeSeconds, int width, int height);
 
     /// <summary>
+    /// 渲染到现有的SKBitmap
+    /// </summary>
+    /// <param name="timeSeconds">当前时间（秒）</param>
+    /// <param name="width">宽度</param>
+    /// <param name="height">高度</param>
+    /// <param name="target">目标SKBitmap</param>
+    void RenderToBitmap(double timeSeconds, int width, int height, SKBitmap target);
+
+    /// <summary>
     /// 更新配置
     /// </summary>
     /// <param name="config">新配置</param>

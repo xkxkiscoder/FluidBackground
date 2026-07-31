@@ -20,6 +20,7 @@ public class FluidBackgroundControl : FrameworkElement
     private bool _isAnimating;
     private double _lastRenderTime;
     private WriteableBitmap? _writeableBitmap;
+    private SKBitmap? _cachedBitmap;
 
     /// <summary>
     /// 流体配置依赖属性
@@ -131,6 +132,8 @@ public class FluidBackgroundControl : FrameworkElement
         _renderer?.Dispose();
         _renderer = null;
         _writeableBitmap = null;
+        _cachedBitmap?.Dispose();
+        _cachedBitmap = null;
     }
 
     private void StartAnimation()
@@ -175,7 +178,6 @@ public class FluidBackgroundControl : FrameworkElement
     {
         if (_renderer == null || !_renderer.IsAvailable)
         {
-            base.OnRender(drawingContext);
             return;
         }
 
@@ -187,7 +189,16 @@ public class FluidBackgroundControl : FrameworkElement
 
         var time = _stopwatch.Elapsed.TotalSeconds;
 
-        using var bitmap = _renderer.RenderToBitmap(time, width, height);
+        // 复用 SKBitmap
+        if (_cachedBitmap == null || _cachedBitmap.Width != width || _cachedBitmap.Height != height)
+        {
+            _cachedBitmap?.Dispose();
+            _cachedBitmap = _renderer.RenderToBitmap(time, width, height);
+        }
+        else
+        {
+            _renderer.RenderToBitmap(time, width, height, _cachedBitmap);
+        }
 
         if (_writeableBitmap == null ||
             _writeableBitmap.PixelWidth != width ||
@@ -199,38 +210,38 @@ public class FluidBackgroundControl : FrameworkElement
         }
 
         _writeableBitmap.Lock();
-        CopySKBitmapToWriteableBitmap(bitmap, _writeableBitmap);
+        CopySKBitmapToWriteableBitmap(_cachedBitmap, _writeableBitmap);
         _writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
         _writeableBitmap.Unlock();
 
         drawingContext.DrawImage(_writeableBitmap, new Rect(0, 0, width, height));
     }
 
-    private static void CopySKBitmapToWriteableBitmap(SKBitmap source, WriteableBitmap target)
+    private static unsafe void CopySKBitmapToWriteableBitmap(SKBitmap source, WriteableBitmap target)
     {
         var sourceData = source.GetPixelSpan();
         var targetBuffer = target.BackBuffer;
         var stride = target.BackBufferStride;
+        var width = source.Width;
+        var height = source.Height;
 
-        unsafe
+        fixed (byte* srcPtr = sourceData)
         {
-            fixed (byte* srcPtr = sourceData)
+            var src = srcPtr;
+            var dst = (byte*)targetBuffer;
+
+            for (int y = 0; y < height; y++)
             {
-                var src = srcPtr;
-                var dst = (byte*)targetBuffer;
+                var srcRow = src + y * width * 4;
+                var dstRow = dst + y * stride;
 
-                for (int y = 0; y < source.Height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    for (int x = 0; x < source.Width; x++)
-                    {
-                        var srcOffset = (y * source.Width + x) * 4;
-                        var dstOffset = y * stride + x * 4;
-
-                        dst[dstOffset + 0] = src[srcOffset + 2]; // B
-                        dst[dstOffset + 1] = src[srcOffset + 1]; // G
-                        dst[dstOffset + 2] = src[srcOffset + 0]; // R
-                        dst[dstOffset + 3] = src[srcOffset + 3]; // A
-                    }
+                    var offset = x * 4;
+                    dstRow[offset] = srcRow[offset + 2];     // B
+                    dstRow[offset + 1] = srcRow[offset + 1]; // G
+                    dstRow[offset + 2] = srcRow[offset];     // R
+                    dstRow[offset + 3] = srcRow[offset + 3]; // A
                 }
             }
         }
