@@ -4,10 +4,12 @@
     <Project Path="Samples/FluidBackground.Sample.Avalonia12/FluidBackground.Sample.Avalonia12.csproj" />
     <Project Path="Samples/FluidBackground.Sample.WPF/FluidBackground.Sample.WPF.csproj" />
     <Project Path="Samples/FluidBackground.Sample.WinForms/FluidBackground.Sample.WinForms.csproj" />
+    <Project Path="Samples/FluidBackground.Sample.WinUI/FluidBackground.Sample.WinUI.csproj" Platform="x64" />
   </Folder>
   <Project Path="FluidBackground.Avalonia11/FluidBackground.Avalonia11.csproj" />
   <Project Path="FluidBackground.Avalonia12/FluidBackground.Avalonia12.csproj" />
   <Project Path="FluidBackground.Core/FluidBackground.Core.csproj" />
   <Project Path="FluidBackground.WinForms/FluidBackground.WinForms.csproj" />
   <Project Path="FluidBackground.WPF/FluidBackground.WPF.csproj" />
+  <Project Path="FluidBackground.WinUI/FluidBackground.WinUI.csproj" Platform="x64" />
 </Solution>
