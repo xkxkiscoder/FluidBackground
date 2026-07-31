@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Samples/">
+    <Project Path="Samples/FluidBackground.Sample/FluidBackground.Sample.csproj" />
+  </Folder>
+  <Project Path="FluidBackground.Avalonia/FluidBackground.Avalonia.csproj" />
+  <Project Path="FluidBackground.Core/FluidBackground.Core.csproj" />
+  <Project Path="FluidBackground.WinForms/FluidBackground.WinForms.csproj" />
+  <Project Path="FluidBackground.WPF/FluidBackground.WPF.csproj" />
+</Solution>

@@ -1,0 +1,96 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:fa="clr-namespace:FluidBackground.Avalonia;assembly=FluidBackground.Avalonia"
+        x:Class="FluidBackground.Sample.MainWindow"
+        Title="流体背景预览"
+        Width="520" Height="580"
+        d:DesignWidth="520" d:DesignHeight="580"
+        mc:Ignorable="d"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+    
+    <Border Background="#1E1E28" Padding="16">
+        <DockPanel>
+            <!-- 上方预览区域 -->
+            <Border DockPanel.Dock="Top" 
+                    CornerRadius="12"
+                    Background="#252530"
+                    Height="220"
+                    Margin="0,0,0,16"
+                    ClipToBounds="True">
+                <fa:FluidBackgroundControl x:Name="PreviewControl"/>
+            </Border>
+            
+            <!-- 下方调节区域 -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <Grid ColumnDefinitions="Auto,*,Auto,*" 
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                      Margin="0,8,0,0">
+                    
+                    <!-- 第1行：配色方案 -->
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="配色" Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                              x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8">
+                        <ComboBoxItem>深海蓝紫</ComboBoxItem>
+                        <ComboBoxItem>日落橙红</ComboBoxItem>
+                        <ComboBoxItem>翡翠绿</ComboBoxItem>
+                        <ComboBoxItem>极光</ComboBoxItem>
+                        <ComboBoxItem>薰衣草</ComboBoxItem>
+                    </ComboBox>
+                    
+                    <!-- 第2行：动画模式 | 渲染模式 -->
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="动画" Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Grid.Row="1" Grid.Column="1"
+                              x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8">
+                        <ComboBoxItem>Fluid</ComboBoxItem>
+                        <ComboBoxItem>Ripple</ComboBoxItem>
+                        <ComboBoxItem>Breathing</ComboBoxItem>
+                    </ComboBox>
+                    
+                    <TextBlock Grid.Row="1" Grid.Column="2"
+                               Text="渲染" Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Grid.Row="1" Grid.Column="3"
+                              x:Name="RenderModeCombo" SelectedIndex="0" Margin="0,0,0,8">
+                        <ComboBoxItem>2D</ComboBoxItem>
+                        <ComboBoxItem>3D</ComboBoxItem>
+                        <ComboBoxItem>自动</ComboBoxItem>
+                    </ComboBox>
+                    
+                    <!-- 第3行：速度 -->
+                    <TextBlock Grid.Row="2" Grid.Column="0"
+                               Text="速度" Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <Slider Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                            x:Name="SpeedSlider" Minimum="0.1" Maximum="3.0" Value="1.0"
+                            Margin="0,0,0,8"/>
+                    
+                    <!-- 第4行：强度 -->
+                    <TextBlock Grid.Row="3" Grid.Column="0"
+                               Text="强度" Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <Slider Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                            x:Name="IntensitySlider" Minimum="0.1" Maximum="1.5" Value="0.7"
+                            Margin="0,0,0,8"/>
+                    
+                    <!-- 第5行：精度 -->
+                    <TextBlock Grid.Row="4" Grid.Column="0"
+                               x:Name="QualityLabel" Text="精度"
+                               Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                            x:Name="QualitySlider" Minimum="1" Maximum="4" Value="1"
+                            TickFrequency="0.1" IsSnapToTickEnabled="False"
+                            Margin="0,0,0,8"/>
+                    
+                </Grid>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</Window>
