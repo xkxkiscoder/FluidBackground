@@ -26,7 +26,7 @@
             <!-- 下方调节区域 -->
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <Grid ColumnDefinitions="Auto,*,Auto,*" 
-                      RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                       Margin="0,8,0,0">
                     
                     <!-- 第1行：配色方案 -->
@@ -49,9 +49,8 @@
                                VerticalAlignment="Center" Margin="0,0,8,8"/>
                     <ComboBox Grid.Row="1" Grid.Column="1"
                               x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8">
-                        <ComboBoxItem>Fluid</ComboBoxItem>
-                        <ComboBoxItem>Ripple</ComboBoxItem>
-                        <ComboBoxItem>Breathing</ComboBoxItem>
+                        <ComboBoxItem>流体</ComboBoxItem>
+                        <ComboBoxItem>星空</ComboBoxItem>
                     </ComboBox>
                     
                     <TextBlock Grid.Row="1" Grid.Column="2"
@@ -66,29 +65,39 @@
                     
                     <!-- 第3行：速度 -->
                     <TextBlock Grid.Row="2" Grid.Column="0"
-                               Text="速度" Foreground="#A0A0B4" FontSize="12"
+                               x:Name="SpeedLabel" Text="速度:1.0" Foreground="#A0A0B4" FontSize="12"
                                VerticalAlignment="Center" Margin="0,0,8,8"/>
                     <Slider Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
                             x:Name="SpeedSlider" Minimum="0.1" Maximum="3.0" Value="1.0"
                             Margin="0,0,0,8"/>
                     
-                    <!-- 第4行：强度 -->
+                    <!-- 第4行：精度 -->
                     <TextBlock Grid.Row="3" Grid.Column="0"
-                               Text="强度" Foreground="#A0A0B4" FontSize="12"
-                               VerticalAlignment="Center" Margin="0,0,8,8"/>
-                    <Slider Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
-                            x:Name="IntensitySlider" Minimum="0.1" Maximum="1.5" Value="0.7"
-                            Margin="0,0,0,8"/>
-                    
-                    <!-- 第5行：精度 -->
-                    <TextBlock Grid.Row="4" Grid.Column="0"
-                               x:Name="QualityLabel" Text="精度"
+                               x:Name="QualityLabel" Text="精度:1.0x"
                                Foreground="#A0A0B4" FontSize="12"
                                VerticalAlignment="Center" Margin="0,0,8,8"/>
-                    <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                    <Slider Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
                             x:Name="QualitySlider" Minimum="1" Maximum="4" Value="1"
                             TickFrequency="0.1" IsSnapToTickEnabled="False"
                             Margin="0,0,0,8"/>
+
+                    <!-- 第5行：浓度 -->
+                    <TextBlock Grid.Row="4" Grid.Column="0"
+                               x:Name="DensityLabel" Text="浓度:0.30" Foreground="#A0A0B4" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                            x:Name="DensitySlider" Minimum="0.1" Maximum="1.0" Value="0.3"
+                            Margin="0,0,0,8"/>
+
+                    <!-- 第6行：效果开关 -->
+                    <CheckBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                              x:Name="MeteorCheckBox" Content="流星" IsChecked="True"
+                              IsVisible="False" Foreground="#A0A0B4" Margin="0,0,8,8"
+                              IsCheckedChanged="OnMeteorChanged"/>
+                    <CheckBox Grid.Row="5" Grid.Column="3"
+                              x:Name="NebulaCheckBox" Content="星云" IsChecked="True"
+                              IsVisible="False" Foreground="#A0A0B4" Margin="0,0,0,8"
+                              IsCheckedChanged="OnNebulaChanged"/>
                     
                 </Grid>
             </ScrollViewer>

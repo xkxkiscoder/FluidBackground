@@ -8,10 +8,14 @@ public partial class MainForm : Form
     private readonly ComboBox _colorCombo;
     private readonly ComboBox _modeCombo;
     private readonly ComboBox _renderModeCombo;
+    private readonly Label _speedLabel;
     private readonly TrackBar _speedSlider;
-    private readonly TrackBar _intensitySlider;
+    private readonly Label _densityLabel;
+    private readonly TrackBar _densitySlider;
     private readonly TrackBar _qualitySlider;
     private readonly Label _qualityLabel;
+    private readonly CheckBox _meteorCheckBox;
+    private readonly CheckBox _nebulaCheckBox;
 
     public MainForm()
     {
@@ -19,10 +23,14 @@ public partial class MainForm : Form
         _colorCombo = new ComboBox();
         _modeCombo = new ComboBox();
         _renderModeCombo = new ComboBox();
+        _speedLabel = new Label();
         _speedSlider = new TrackBar();
-        _intensitySlider = new TrackBar();
+        _densityLabel = new Label();
+        _densitySlider = new TrackBar();
         _qualitySlider = new TrackBar();
         _qualityLabel = new Label();
+        _meteorCheckBox = new CheckBox();
+        _nebulaCheckBox = new CheckBox();
 
         InitializeComponent();
         InitializePreview();
@@ -77,7 +85,7 @@ public partial class MainForm : Form
         _modeCombo.Location = new Point(60, 277);
         _modeCombo.Width = 120;
         _modeCombo.DropDownStyle = ComboBoxStyle.DropDownList;
-        _modeCombo.Items.AddRange(new object[] { "Fluid", "Ripple", "Breathing" });
+        _modeCombo.Items.AddRange(new object[] { "流体", "星空" });
         _modeCombo.SelectedIndex = 0;
         Controls.Add(_modeCombo);
 
@@ -101,15 +109,12 @@ public partial class MainForm : Form
         Controls.Add(_renderModeCombo);
 
         // 速度标签
-        var speedLabel = new Label
-        {
-            Text = "速度",
-            ForeColor = Color.FromArgb(160, 160, 180),
-            Font = new Font("Microsoft YaHei", 9),
-            Location = new Point(20, 320),
-            AutoSize = true
-        };
-        Controls.Add(speedLabel);
+        _speedLabel.Text = "速度:1.0";
+        _speedLabel.ForeColor = Color.FromArgb(160, 160, 180);
+        _speedLabel.Font = new Font("Microsoft YaHei", 9);
+        _speedLabel.Location = new Point(20, 320);
+        _speedLabel.AutoSize = true;
+        Controls.Add(_speedLabel);
 
         // 速度滑块
         _speedSlider.Location = new Point(60, 315);
@@ -120,42 +125,57 @@ public partial class MainForm : Form
         _speedSlider.TickFrequency = 1;
         Controls.Add(_speedSlider);
 
-        // 强度标签
-        var intensityLabel = new Label
-        {
-            Text = "强度",
-            ForeColor = Color.FromArgb(160, 160, 180),
-            Font = new Font("Microsoft YaHei", 9),
-            Location = new Point(20, 360),
-            AutoSize = true
-        };
-        Controls.Add(intensityLabel);
-
-        // 强度滑块
-        _intensitySlider.Location = new Point(60, 355);
-        _intensitySlider.Width = 420;
-        _intensitySlider.Minimum = 1;
-        _intensitySlider.Maximum = 15;
-        _intensitySlider.Value = 7;
-        _intensitySlider.TickFrequency = 1;
-        Controls.Add(_intensitySlider);
-
         // 精度标签
         _qualityLabel.Text = "精度:1.0x";
         _qualityLabel.ForeColor = Color.FromArgb(160, 160, 180);
         _qualityLabel.Font = new Font("Microsoft YaHei", 9);
-        _qualityLabel.Location = new Point(20, 400);
+        _qualityLabel.Location = new Point(20, 360);
         _qualityLabel.AutoSize = true;
         Controls.Add(_qualityLabel);
 
         // 精度滑块
-        _qualitySlider.Location = new Point(60, 395);
+        _qualitySlider.Location = new Point(60, 355);
         _qualitySlider.Width = 420;
         _qualitySlider.Minimum = 10;
         _qualitySlider.Maximum = 40;
         _qualitySlider.Value = 10;
         _qualitySlider.TickFrequency = 1;
         Controls.Add(_qualitySlider);
+
+        // 浓度标签
+        _densityLabel.Text = "浓度:0.30";
+        _densityLabel.ForeColor = Color.FromArgb(160, 160, 180);
+        _densityLabel.Font = new Font("Microsoft YaHei", 9);
+        _densityLabel.Location = new Point(20, 400);
+        _densityLabel.AutoSize = true;
+        Controls.Add(_densityLabel);
+
+        // 浓度滑块
+        _densitySlider.Location = new Point(60, 395);
+        _densitySlider.Width = 420;
+        _densitySlider.Minimum = 10;
+        _densitySlider.Maximum = 100;
+        _densitySlider.Value = 30;
+        _densitySlider.TickFrequency = 1;
+        Controls.Add(_densitySlider);
+
+        // 流星复选框（仅星空模式显示）
+        _meteorCheckBox.Text = "流星";
+        _meteorCheckBox.Checked = true;
+        _meteorCheckBox.Visible = false;
+        _meteorCheckBox.ForeColor = Color.FromArgb(160, 160, 180);
+        _meteorCheckBox.Location = new Point(60, 440);
+        _meteorCheckBox.AutoSize = true;
+        Controls.Add(_meteorCheckBox);
+
+        // 星云复选框（仅星空模式显示）
+        _nebulaCheckBox.Text = "星云";
+        _nebulaCheckBox.Checked = true;
+        _nebulaCheckBox.Visible = false;
+        _nebulaCheckBox.ForeColor = Color.FromArgb(160, 160, 180);
+        _nebulaCheckBox.Location = new Point(150, 440);
+        _nebulaCheckBox.AutoSize = true;
+        Controls.Add(_nebulaCheckBox);
     }
 
     private void InitializePreview()
@@ -170,7 +190,7 @@ public partial class MainForm : Form
                 FluidColor.FromHex("#7B2D8E")
             ],
             Speed = 1.0f,
-            Intensity = 0.7f,
+            Density = 0.3f,
             Mode = FluidMode.Fluid,
             EnablePointerInteraction = true
         };
@@ -181,9 +201,11 @@ public partial class MainForm : Form
         _colorCombo.SelectedIndexChanged += OnColorChanged;
         _modeCombo.SelectedIndexChanged += OnModeChanged;
         _speedSlider.ValueChanged += OnSpeedChanged;
-        _intensitySlider.ValueChanged += OnIntensityChanged;
+        _densitySlider.ValueChanged += OnDensityChanged;
         _qualitySlider.ValueChanged += OnQualityChanged;
         _renderModeCombo.SelectedIndexChanged += OnRenderModeChanged;
+        _meteorCheckBox.CheckedChanged += OnMeteorChanged;
+        _nebulaCheckBox.CheckedChanged += OnNebulaChanged;
     }
 
     private void OnColorChanged(object? sender, EventArgs e)
@@ -242,21 +264,27 @@ public partial class MainForm : Form
         var mode = _modeCombo.SelectedIndex switch
         {
             0 => FluidMode.Fluid,
-            1 => FluidMode.Ripple,
-            2 => FluidMode.Breathing,
+            1 => FluidMode.Starfield,
             _ => FluidMode.Fluid
         };
+        var showStarfieldOptions = mode == FluidMode.Starfield;
+        _meteorCheckBox.Visible = showStarfieldOptions;
+        _nebulaCheckBox.Visible = showStarfieldOptions;
+        _qualityLabel.Visible = !showStarfieldOptions;
+        _qualitySlider.Visible = !showStarfieldOptions;
         UpdateConfig(c => c.Mode = mode);
     }
 
     private void OnSpeedChanged(object? sender, EventArgs e)
     {
+        _speedLabel.Text = $"速度:{_speedSlider.Value / 10.0f:F1}";
         UpdateConfig(c => c.Speed = _speedSlider.Value / 10.0f);
     }
 
-    private void OnIntensityChanged(object? sender, EventArgs e)
+    private void OnDensityChanged(object? sender, EventArgs e)
     {
-        UpdateConfig(c => c.Intensity = _intensitySlider.Value / 10.0f);
+        _densityLabel.Text = $"浓度:{_densitySlider.Value / 100.0f:F2}";
+        UpdateConfig(c => c.Density = _densitySlider.Value / 100.0f);
     }
 
     private void OnQualityChanged(object? sender, EventArgs e)
@@ -264,6 +292,16 @@ public partial class MainForm : Form
         var quality = _qualitySlider.Value / 10.0f;
         _qualityLabel.Text = $"精度:{quality:F1}x";
         UpdateConfig(c => c.RenderQuality = quality);
+    }
+
+    private void OnMeteorChanged(object? sender, EventArgs e)
+    {
+        UpdateConfig(c => c.EnableMeteor = _meteorCheckBox.Checked);
+    }
+
+    private void OnNebulaChanged(object? sender, EventArgs e)
+    {
+        UpdateConfig(c => c.EnableNebula = _nebulaCheckBox.Checked);
     }
 
     private void OnRenderModeChanged(object? sender, EventArgs e)

@@ -1,7 +1,7 @@
 namespace FluidBackground.Core.Models;
 
 /// <summary>
-/// 流体动画模式
+/// 渲染效果模式
 /// </summary>
 public enum FluidMode
 {
@@ -11,14 +11,9 @@ public enum FluidMode
     Fluid,
 
     /// <summary>
-    /// 波纹扩散效果
+    /// 星空效果（闪烁星点、星云、流星）
     /// </summary>
-    Ripple,
-
-    /// <summary>
-    /// 呼吸脉动效果
-    /// </summary>
-    Breathing
+    Starfield
 }
 
 /// <summary>
@@ -58,12 +53,12 @@ public class FluidConfig
     public float Speed { get; set; } = 1.0f;
 
     /// <summary>
-    /// 效果强度（0.0-1.0）
+    /// 图案分布浓度（0.0-1.0），值越小纹理越稀疏、观感越淡雅，1.0 为最浓
     /// </summary>
-    public float Intensity { get; set; } = 0.7f;
+    public float Density { get; set; } = 0.3f;
 
     /// <summary>
-    /// 流体动画模式
+    /// 效果模式（Fluid / Starfield）
     /// </summary>
     public FluidMode Mode { get; set; } = FluidMode.Fluid;
 
@@ -76,6 +71,16 @@ public class FluidConfig
     /// 渲染精度（1.0=最高精度，4.0=最低精度，支持无极调节）
     /// </summary>
     public float RenderQuality { get; set; } = 1.0f;
+
+    /// <summary>
+    /// 是否显示流星（星空模式）
+    /// </summary>
+    public bool EnableMeteor { get; set; } = true;
+
+    /// <summary>
+    /// 是否显示星云（星空模式）
+    /// </summary>
+    public bool EnableNebula { get; set; } = true;
 
     /// <summary>
     /// 是否启用指针交互
@@ -105,10 +110,12 @@ public class FluidConfig
     {
         Colors = Colors.Select(c => c).ToArray(),
         Speed = Speed,
-        Intensity = Intensity,
+        Density = Density,
         Mode = Mode,
         RenderMode = RenderMode,
         RenderQuality = RenderQuality,
+        EnableMeteor = EnableMeteor,
+        EnableNebula = EnableNebula,
         EnablePointerInteraction = EnablePointerInteraction,
         PointerRadius = PointerRadius
     };

@@ -28,7 +28,7 @@ public sealed partial class MainWindow : Window
                 FluidColor.FromHex("#7B2D8E")
             ],
             Speed = 1.0f,
-            Intensity = 0.7f,
+            Density = 0.3f,
             Mode = FluidMode.Fluid,
             EnablePointerInteraction = true
         };
@@ -39,9 +39,13 @@ public sealed partial class MainWindow : Window
         ColorCombo.SelectionChanged += OnColorChanged;
         ModeCombo.SelectionChanged += OnModeChanged;
         SpeedSlider.ValueChanged += OnSpeedChanged;
-        IntensitySlider.ValueChanged += OnIntensityChanged;
+        DensitySlider.ValueChanged += OnDensityChanged;
         QualitySlider.ValueChanged += OnQualityChanged;
         RenderModeCombo.SelectionChanged += OnRenderModeChanged;
+        MeteorCheckBox.Checked += OnMeteorChanged;
+        MeteorCheckBox.Unchecked += OnMeteorChanged;
+        NebulaCheckBox.Checked += OnNebulaChanged;
+        NebulaCheckBox.Unchecked += OnNebulaChanged;
     }
 
     private void OnColorChanged(object sender, SelectionChangedEventArgs e)
@@ -100,21 +104,27 @@ public sealed partial class MainWindow : Window
         var mode = ModeCombo.SelectedIndex switch
         {
             0 => FluidMode.Fluid,
-            1 => FluidMode.Ripple,
-            2 => FluidMode.Breathing,
+            1 => FluidMode.Starfield,
             _ => FluidMode.Fluid
         };
+        var showStarfieldOptions = mode == FluidMode.Starfield;
+        MeteorCheckBox.Visibility = showStarfieldOptions ? Visibility.Visible : Visibility.Collapsed;
+        NebulaCheckBox.Visibility = showStarfieldOptions ? Visibility.Visible : Visibility.Collapsed;
+        QualityLabel.Visibility = showStarfieldOptions ? Visibility.Collapsed : Visibility.Visible;
+        QualitySlider.Visibility = showStarfieldOptions ? Visibility.Collapsed : Visibility.Visible;
         UpdateConfig(c => c.Mode = mode);
     }
 
     private void OnSpeedChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
+        SpeedLabel.Text = $"速度:{e.NewValue:F1}";
         UpdateConfig(c => c.Speed = (float)e.NewValue);
     }
 
-    private void OnIntensityChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    private void OnDensityChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        UpdateConfig(c => c.Intensity = (float)e.NewValue);
+        DensityLabel.Text = $"浓度:{e.NewValue:F2}";
+        UpdateConfig(c => c.Density = (float)e.NewValue);
     }
 
     private void OnQualityChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -122,6 +132,16 @@ public sealed partial class MainWindow : Window
         var quality = (float)e.NewValue;
         QualityLabel.Text = $"精度:{quality:F1}x";
         UpdateConfig(c => c.RenderQuality = quality);
+    }
+
+    private void OnMeteorChanged(object sender, RoutedEventArgs e)
+    {
+        UpdateConfig(c => c.EnableMeteor = MeteorCheckBox.IsChecked == true);
+    }
+
+    private void OnNebulaChanged(object sender, RoutedEventArgs e)
+    {
+        UpdateConfig(c => c.EnableNebula = NebulaCheckBox.IsChecked == true);
     }
 
     private void OnRenderModeChanged(object sender, SelectionChangedEventArgs e)
