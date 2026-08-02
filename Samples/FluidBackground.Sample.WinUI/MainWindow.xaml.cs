@@ -9,8 +9,8 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         this.InitializeComponent();
-        this.Title = "流体背景预览";
-        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(540, 620));
+        this.Title = "FluidBackground 控件预览";
+        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(760, 660));
         this.AppWindow.IsShownInSwitchers = true;
         InitializePreview();
         BindEvents();
@@ -32,6 +32,17 @@ public sealed partial class MainWindow : Window
             Mode = FluidMode.Fluid,
             EnablePointerInteraction = true
         };
+
+        ArcControl.Config = new LightningArcConfig
+        {
+            Theme = LightningArcTheme.BlueWhiteCyan,
+            Progress = 0.3f,
+            Title = "NEURAL SYNC",
+            Subtitle = "SYSTEM ONLINE",
+            GlowIntensity = 1.5f,
+            JitterAmount = 0.02f,
+            ForkChance = 0.3f
+        };
     }
 
     private void BindEvents()
@@ -46,6 +57,9 @@ public sealed partial class MainWindow : Window
         MeteorCheckBox.Unchecked += OnMeteorChanged;
         NebulaCheckBox.Checked += OnNebulaChanged;
         NebulaCheckBox.Unchecked += OnNebulaChanged;
+
+        ThemeCombo.SelectionChanged += OnThemeChanged;
+        ProgressSlider.ValueChanged += OnProgressChanged;
     }
 
     private void OnColorChanged(object sender, SelectionChangedEventArgs e)
@@ -154,6 +168,30 @@ public sealed partial class MainWindow : Window
             _ => RenderMode.Auto
         };
         UpdateConfig(c => c.RenderMode = mode);
+    }
+
+    private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ArcControl.Config is not LightningArcConfig config)
+            return;
+
+        var theme = ThemeCombo.SelectedIndex switch
+        {
+            1 => LightningArcTheme.PurpleNavy,
+            2 => LightningArcTheme.Clean,
+            3 => LightningArcTheme.GreenYellow,
+            _ => LightningArcTheme.BlueWhiteCyan
+        };
+
+        var newConfig = config.Clone();
+        newConfig.Theme = theme;
+        ArcControl.Config = newConfig;
+    }
+
+    private void OnProgressChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        ProgressLabel.Text = $"{(int)e.NewValue}%";
+        ArcControl.Progress = e.NewValue;
     }
 
     private void UpdateConfig(Action<FluidConfig> update)
