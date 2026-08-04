@@ -115,7 +115,7 @@ float starLayer(vec2 uv, float scale, float time, float density) {
     vec2 f = fract(p);
 
     float r0 = hash(cell + vec2(3.0, 3.0));
-    if (r0 > 0.9 * density) return 0.0;   // 浓度越高出星越多
+    if (r0 > (1.0 - density * 0.18)) return 0.0;   // 浓度越高出星越多
 
     float r1 = hash(cell);
     float r2 = hash(cell + vec2(1.0, 0.0));
