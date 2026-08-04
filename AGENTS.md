@@ -21,9 +21,9 @@
 - `FluidBackground.Core/` —— 渲染核心，无 UI 依赖：
   - `FluidRenderer.cs` —— 门面：`Create` / `CreateWithOpenGL` 工厂；`RenderFrame` / `RenderToBitmap` / `RenderToCanvas` / `SetPointerPosition`；内部用 `lock` 保证线程安全；`RenderMode.Auto` 在 OpenGL 初始化失败时自动回退到 Skia。
   - `Renderers/IFluidRenderer.cs` —— 渲染器接口（`Name`、`IsAvailable`、`Initialize`、`Render*`、`UpdateConfig`、`SetPointerPosition`）。
-  - `Renderers/SkiaRenderer.cs` —— 2D 后端（SKSL 着色器）。
+  - `Renderers/SkiaRenderer.cs` —— 2D 后端（SKSL 着色器），支持四种效果模式：`FluidEffect` / `StarfieldEffect` / `NebulaEffect` / `AuroraEffect`。
   - `Renderers/OpenGLRenderer.cs` —— 3D 后端（Silk.NET GL；内嵌顶点着色器，加载嵌入资源 `FluidBackground.Core.Shaders.fluid.frag`）。
-  - `Models/` —— `FluidConfig`（Colors/Speed/Density/Mode/RenderQuality/EnableMeteor/EnableNebula/EnablePointerInteraction/PointerRadius）、`FluidColor`、`FluidMode`（Fluid/Starfield）、`RenderMode`（Auto/Force2D/Force3D）。
+  - `Models/` —— `FluidConfig`（Colors/Speed/Density/Mode/RenderQuality/EnableMeteor/EnableNebula/EnablePointerInteraction/PointerRadius/Seed/AuroraProfile）、`FluidColor`、`FluidMode`（Fluid/Starfield/Nebula/Aurora）、`RenderMode`（Auto/Force2D/Force3D）、`AuroraProfile`（Polar/Dubdot/Vercel）、`NebulaPresets`（9组预设配置）。
   - `Shaders/*.sksl, *.frag` —— 嵌入资源（在 csproj 中声明）。
 - `FluidBackground.{WPF,WinForms,WinUI,Avalonia11,Avalonia12}/` —— 每个适配层提供同名 `FluidBackgroundControl` 控件，含 `Config` / `IsAnimationEnabled` / `MaxFps` 依赖属性（Avalonia 为 AvaloniaProperty）。
 - `Samples/FluidBackground.Sample.*/` —— 各平台可运行示例，引用 Core 与对应适配层。
@@ -37,7 +37,13 @@
 - 新增后端：实现 `IFluidRenderer`，并在 `FluidRenderer.InitializeRenderer` 的 `RenderMode` 分支中注册。
 - 修改着色器时需同步更新 `fluid.frag`（OpenGL）与 `fluid.sksl`（Skia）两处。
 - 新增适配层：新建 `FluidBackground.<框架>` 项目并实现 `FluidBackgroundControl`，增加对应 Sample，并把两者注册进 `FluidBackground.slnx`（WinUI 条目需 `Platform="x64"`）。
+- 新增效果模式：在 `FluidMode` 枚举中添加新值，在着色器中添加对应的渲染函数，在 `SkiaRenderer.cs` 和 `OpenGLRenderer.cs` 中添加对应的 C# 实现，在 `FluidConfig` 中添加必要的配置属性。
 
 ## 备注
 
--
+- 新增的 Nebula 和 Aurora 模式灵感来自 [nebula-capsules](https://github.com/yizhe21803/nebula-capsules) 项目，实现了 9 组预设效果（6 组星云胶囊 + 3 组极光效果）。
+- Nebula 模式使用多层噪声、星点、云团与旋涡构成宇宙星云材质。
+- Aurora 模式使用低频噪声与多条柔光带生成平滑迁移的渐变，支持 Polar、Dubdot、Vercel 三种配置文件。
+- 两种新模式均支持指针交互，指针位置会影响渲染效果（如旋涡方向、柔光带弯曲等）。
+- 新增的 `Seed` 属性用于控制星云和极光效果的形态生成，不同种子值会产生不同的视觉效果。
+- 新增的 `AuroraProfile` 属性用于选择极光效果的配置文件，仅在 Aurora 模式下生效。

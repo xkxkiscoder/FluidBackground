@@ -93,6 +93,8 @@ public class SkiaRenderer : IFluidRenderer
         {
             FluidMode.Fluid => FluidEffect(u, v, time),
             FluidMode.Starfield => StarfieldEffect(u, v, time),
+            FluidMode.Nebula => NebulaEffect(u, v, time),
+            FluidMode.Aurora => AuroraEffect(u, v, time),
             _ => FluidEffect(u, v, time)
         };
 
@@ -178,6 +180,361 @@ public class SkiaRenderer : IFluidRenderer
         }
 
         return color;
+    }
+
+    /// <summary>
+    /// 星云胶囊效果（优化版：减少噪声层数，使用更快的算法）
+    /// </summary>
+    /// <param name="u">归一化X坐标（0-1）</param>
+    /// <param name="v">归一化Y坐标（0-1）</param>
+    /// <param name="t">时间参数</param>
+    /// <returns>像素颜色</returns>
+    private float3 NebulaEffect(float u, float v, float t)
+    {
+        var c = _config!.Colors;
+        var c0 = ToFloat3(c[0]);
+        var c1 = ToFloat3(c.Length > 1 ? c[1] : c[0]);
+        var c2 = ToFloat3(c.Length > 2 ? c[2] : c[0]);
+        var c3 = ToFloat3(c.Length > 3 ? c[3] : c[0]);
+
+        float seed = _config.Seed;
+        float px = u - 0.5f;
+        float py = v - 0.5f;
+        float distanceToPointer = MathF.Sqrt((px - _pointerX) * (px - _pointerX) + (py - _pointerY) * (py - _pointerY));
+
+        // 域扭曲（简化计算）
+        float influence = MathF.Exp(-distanceToPointer * 4.6f) * 0.5f;
+        float angle = influence * 1.7f;
+        float cosA = MathF.Cos(angle);
+        float sinA = MathF.Sin(angle);
+        float newPx = cosA * px - sinA * py;
+        float newPy = sinA * px + cosA * py;
+        px = newPx;
+        py = newPy;
+
+        // 使用优化的3层fbm（减少计算量）
+        float q1 = FastFbm(px * 1.35f + t * 0.22f + seed, py * 1.35f - t * 0.13f + seed);
+        float q2 = FastFbm(px * 1.35f + 5.2f + t * 0.22f, py * 1.35f + 1.3f - t * 0.13f);
+        
+        // 简化r层计算（只用1次fbm而不是2次）
+        float r = FastFbm(px * 2.0f + 3.0f * q1 + 5.0f + t * 0.10f, py * 2.0f + 3.0f * q2 + 5.0f + t * 0.10f);
+
+        float cloud = FastFbm(px * 1.7f + 4.0f * r, py * 1.7f + 4.0f * r);
+        float veins = FastFbm(px * 3.0f - 2.0f * q1 + t * 0.065f, py * 3.0f - 2.0f * q2 + t * 0.065f);
+        float nebula = SmoothStep(0.18f, 0.91f, cloud * 0.9f + veins * 0.22f);
+
+        float3 color = NebulaPalette(nebula, c0, c1, c2, c3);
+        color += c3 * MathF.Pow(MathF.Max(cloud - 0.63f, 0f), 2f) * 1.05f;
+        color *= 0.78f + 0.34f * SmoothStep(0.15f, 0.9f, veins);
+
+        // 星点（简化计算）
+        float starX = u + seed * 0.013f;
+        float starY = v;
+        int starGridX = (int)MathF.Floor(starX * 132f);
+        int starGridY = (int)MathF.Floor(starY * 58f);
+        float starCellX = (starX * 132f) - starGridX - 0.5f;
+        float starCellY = (starY * 58f) - starGridY - 0.5f;
+        float starRandom = Hash21(starGridX, starGridY);
+        float starShape = SmoothStep(0.075f, 0f, MathF.Sqrt(starCellX * starCellX + starCellY * starCellY));
+        float starMask = starRandom > 0.989f ? starShape : 0f;
+        float twinkle = 0.35f + 0.65f * MathF.Sin(t * (1f + starRandom * 2.4f) + starRandom * 40f) * 0.5f + 0.5f;
+        color += starMask * twinkle * Lerp(c2, c3, starRandom) * 1.05f;
+
+        return color;
+    }
+
+    /// <summary>
+    /// 极光效果（低频噪声与多条柔光带生成平滑迁移的渐变）
+    /// </summary>
+    /// <param name="u">归一化X坐标（0-1）</param>
+    /// <param name="v">归一化Y坐标（0-1）</param>
+    /// <param name="t">时间参数</param>
+    /// <returns>像素颜色</returns>
+    private float3 AuroraEffect(float u, float v, float t)
+    {
+        var c = _config!.Colors;
+        var c0 = ToFloat3(c[0]);
+        var c1 = ToFloat3(c.Length > 1 ? c[1] : c[0]);
+        var c2 = ToFloat3(c.Length > 2 ? c[2] : c[0]);
+        var c3 = ToFloat3(c.Length > 3 ? c[3] : c[0]);
+
+        float seed = _config.Seed;
+        float distanceToPointer = MathF.Sqrt((u - _pointerX) * (u - _pointerX) + (v - _pointerY) * (v - _pointerY));
+
+        return _config.AuroraProfile switch
+        {
+            AuroraProfile.Polar => RenderPolar(u, v, t, seed, distanceToPointer, c0, c1, c2, c3),
+            AuroraProfile.Dubdot => RenderDubdot(u, v, t, seed, distanceToPointer, c0, c1, c2, c3),
+            AuroraProfile.Vercel => RenderVercel(u, v, t, seed, distanceToPointer, c0, c1, c2, c3),
+            _ => RenderPolar(u, v, t, seed, distanceToPointer, c0, c1, c2, c3)
+        };
+    }
+
+    /// <summary>
+    /// POLAR极光效果（深色胶囊，橙色、洋红与暖白柔光带）
+    /// </summary>
+    /// <param name="u">归一化X坐标</param>
+    /// <param name="v">归一化Y坐标</param>
+    /// <param name="t">时间参数</param>
+    /// <param name="seed">随机种子</param>
+    /// <param name="distanceToPointer">到指针的距离</param>
+    /// <param name="c0">颜色0</param>
+    /// <param name="c1">颜色1</param>
+    /// <param name="c2">颜色2</param>
+    /// <param name="c3">颜色3</param>
+    /// <returns>像素颜色</returns>
+    private float3 RenderPolar(float u, float v, float t, float seed, float distanceToPointer, float3 c0, float3 c1, float3 c2, float3 c3)
+    {
+        float phase = t * 1.08f + seed * 0.063f;
+        float rightField = SmoothStep(0.06f, 0.96f, u);
+        float grain = FastFbm(u * 1.85f - phase * 0.14f, v * 2.45f + phase * 0.10f + seed) - 0.5f;
+
+        float orangeCenter = 0.76f - u * 0.20f + MathF.Sin(phase + u * 3.7f) * 0.14f + grain * 0.16f;
+        float magentaCenter = 0.37f + u * 0.13f + MathF.Sin(phase * 0.84f + u * 4.7f + 1.1f) * 0.16f - grain * 0.14f;
+        float lowerCenter = 0.13f + MathF.Sin(phase * 0.72f + u * 3.8f) * 0.10f;
+        float sweepCenter = 0.54f + MathF.Sin(phase * 1.22f + u * 5.4f) * 0.08f;
+
+        float orangeBand = Gaussian(v, orangeCenter, 0.074f);
+        float magentaBand = Gaussian(v, magentaCenter, 0.115f);
+        float lowerBand = Gaussian(v, lowerCenter, 0.070f);
+        float sweepBand = Gaussian(v, sweepCenter, 0.027f) * SmoothStep(0.28f, 0.98f, u);
+
+        float coreX = 0.945f + MathF.Sin(phase * 0.68f) * 0.052f;
+        float coreY = 0.60f + MathF.Cos(phase * 0.83f) * 0.145f;
+        float whiteCore = MathF.Exp(-MathF.Sqrt((u - coreX) * (u - coreX) * 2.05f * 2.05f + (v - coreY) * (v - coreY) * 0.94f * 0.94f) * 6.1f);
+
+        float secCoreX = 0.90f + MathF.Cos(phase * 0.47f) * 0.055f;
+        float secCoreY = 0.27f + MathF.Sin(phase * 0.64f) * 0.08f;
+        float secondaryCore = MathF.Exp(-MathF.Sqrt((u - secCoreX) * (u - secCoreX) * 2.4f * 2.4f + (v - secCoreY) * (v - secCoreY) * 1.15f * 1.15f) * 7.0f);
+
+        float pulse = 0.72f + MathF.Sin(phase * 1.62f) * 0.28f;
+        float pointerBend = MathF.Exp(-distanceToPointer * 6.4f) * 0.5f;
+
+        float3 color = c0;
+        color = Lerp(color, c1, Math.Clamp(orangeBand * rightField * 1.16f, 0f, 1f));
+        color = Lerp(color, c2, Math.Clamp((magentaBand * 1.18f + lowerBand * 0.82f) * rightField, 0f, 1f));
+        color += c3 * whiteCore * pulse * 1.30f;
+        color += Lerp(c3, c2, 0.30f) * secondaryCore * 0.58f;
+        color += Lerp(c3, c2, 0.55f) * sweepBand * 0.42f;
+        color += c2 * pointerBend * rightField * 0.24f;
+        color += Lerp(c1, c2, 0.55f) * SmoothStep(0.35f, 0.94f, grain + 0.5f) * rightField * 0.18f;
+
+        return color;
+    }
+
+    /// <summary>
+    /// DUBDOT极光效果（白色胶囊，浅蓝、天蓝与青蓝柔光带）
+    /// </summary>
+    /// <param name="u">归一化X坐标</param>
+    /// <param name="v">归一化Y坐标</param>
+    /// <param name="t">时间参数</param>
+    /// <param name="seed">随机种子</param>
+    /// <param name="distanceToPointer">到指针的距离</param>
+    /// <param name="c0">颜色0</param>
+    /// <param name="c1">颜色1</param>
+    /// <param name="c2">颜色2</param>
+    /// <param name="c3">颜色3</param>
+    /// <returns>像素颜色</returns>
+    private float3 RenderDubdot(float u, float v, float t, float seed, float distanceToPointer, float3 c0, float3 c1, float3 c2, float3 c3)
+    {
+        float phase = t * 0.86f + seed * 0.051f;
+        float rightField = SmoothStep(0.16f, 0.97f, u);
+        float drift = FastFbm(u * 1.25f - phase * 0.105f, v * 1.95f + phase * 0.075f + seed) - 0.5f;
+
+        float upperCenter = 0.72f - u * 0.18f + MathF.Sin(phase + u * 3.4f) * 0.115f + drift * 0.15f;
+        float lowerCenter = 0.28f + u * 0.11f + MathF.Cos(phase * 0.88f + u * 3.2f) * 0.125f - drift * 0.12f;
+        float middleCenter = 0.50f + MathF.Sin(phase * 1.18f + u * 4.8f) * 0.075f;
+        float upperBand = Gaussian(v, upperCenter, 0.115f);
+        float lowerBand = Gaussian(v, lowerCenter, 0.125f);
+        float middleBand = Gaussian(v, middleCenter, 0.052f) * SmoothStep(0.34f, 0.98f, u);
+
+        float softBodyX = 0.87f + MathF.Sin(phase * 0.52f) * 0.065f;
+        float softBodyY = 0.51f + MathF.Cos(phase * 0.44f) * 0.045f;
+        float softBody = MathF.Exp(-MathF.Sqrt((u - softBodyX) * (u - softBodyX) * 1.42f * 1.42f + (v - softBodyY) * (v - softBodyY) * 0.72f * 0.72f) * 2.85f);
+
+        float pointerBend = MathF.Exp(-distanceToPointer * 6.8f) * 0.5f;
+
+        float3 color = c0;
+        color = Lerp(color, c1, Math.Clamp(softBody * rightField * 0.74f, 0f, 1f));
+        color = Lerp(color, c2, Math.Clamp((upperBand * 0.76f + middleBand * 0.28f) * rightField, 0f, 1f));
+        color = Lerp(color, c3, Math.Clamp((lowerBand * 0.82f + softBody * 0.46f + middleBand * 0.34f) * rightField, 0f, 1f));
+        color += Lerp(c2, c3, 0.58f) * middleBand * rightField * 0.18f;
+        color = Lerp(color, new float3(1f, 1f, 1f), SmoothStep(0f, 0.34f, 1f - rightField) * 0.24f);
+        color += c3 * pointerBend * rightField * 0.15f;
+
+        return color;
+    }
+
+    /// <summary>
+    /// VERCEL极光效果（白色胶囊，薄荷绿、淡黄与浅粉柔光带）
+    /// </summary>
+    /// <param name="u">归一化X坐标</param>
+    /// <param name="v">归一化Y坐标</param>
+    /// <param name="t">时间参数</param>
+    /// <param name="seed">随机种子</param>
+    /// <param name="distanceToPointer">到指针的距离</param>
+    /// <param name="c0">颜色0</param>
+    /// <param name="c1">颜色1</param>
+    /// <param name="c2">颜色2</param>
+    /// <param name="c3">颜色3</param>
+    /// <returns>像素颜色</returns>
+    private float3 RenderVercel(float u, float v, float t, float seed, float distanceToPointer, float3 c0, float3 c1, float3 c2, float3 c3)
+    {
+        float phase = t * 1.62f + seed * 0.044f;
+        float rightField = SmoothStep(0.12f, 0.97f, u);
+        float flowNoise = FastFbm(u * 1.28f - phase * 0.12f, v * 1.92f + phase * 0.09f + seed) - 0.5f;
+
+        float mintCenter = 0.78f - u * 0.24f + MathF.Sin(phase + u * 3.9f) * 0.16f + flowNoise * 0.13f;
+        float goldCenter = 0.50f + MathF.Sin(phase * 0.86f + u * 4.5f + 1.7f) * 0.18f - flowNoise * 0.11f;
+        float pinkCenter = 0.20f + u * 0.17f + MathF.Sin(phase * 1.08f + u * 3.6f + 3.0f) * 0.15f + flowNoise * 0.10f;
+
+        float mintBand = Gaussian(v, mintCenter, 0.105f);
+        float goldBand = Gaussian(v, goldCenter, 0.115f);
+        float pinkBand = Gaussian(v, pinkCenter, 0.100f);
+
+        float mintCoreX = 0.88f + MathF.Sin(phase * 0.68f) * 0.085f;
+        float mintCoreY = 0.74f + MathF.Cos(phase * 0.82f) * 0.13f;
+        float mintCore = MathF.Exp(-MathF.Sqrt((u - mintCoreX) * (u - mintCoreX) * 1.48f * 1.48f + (v - mintCoreY) * (v - mintCoreY) * 0.82f * 0.82f) * 3.35f);
+
+        float goldCoreX = 0.92f + MathF.Cos(phase * 0.61f + 1.2f) * 0.080f;
+        float goldCoreY = 0.50f + MathF.Sin(phase * 0.77f) * 0.15f;
+        float goldCore = MathF.Exp(-MathF.Sqrt((u - goldCoreX) * (u - goldCoreX) * 1.42f * 1.42f + (v - goldCoreY) * (v - goldCoreY) * 0.80f * 0.80f) * 3.20f);
+
+        float pinkCoreX = 0.86f + MathF.Sin(phase * 0.73f + 2.1f) * 0.095f;
+        float pinkCoreY = 0.27f + MathF.Cos(phase * 0.66f) * 0.13f;
+        float pinkCore = MathF.Exp(-MathF.Sqrt((u - pinkCoreX) * (u - pinkCoreX) * 1.44f * 1.44f + (v - pinkCoreY) * (v - pinkCoreY) * 0.82f * 0.82f) * 3.28f);
+
+        float rightBodyX = 0.91f + MathF.Sin(phase * 0.38f) * 0.045f;
+        float rightBodyY = 0.50f + MathF.Cos(phase * 0.42f) * 0.055f;
+        float rightBody = MathF.Exp(-MathF.Sqrt((u - rightBodyX) * (u - rightBodyX) * 1.20f * 1.20f + (v - rightBodyY) * (v - rightBodyY) * 0.68f * 0.68f) * 2.62f);
+
+        float separation = Gaussian(v, 0.49f + MathF.Sin(phase * 0.94f + u * 5.0f) * 0.10f, 0.035f) * SmoothStep(0.34f, 0.98f, u);
+
+        float pointerBend = MathF.Exp(-distanceToPointer * 6.8f) * 0.5f;
+
+        float3 color = c0;
+        color = Lerp(color, c1, Math.Clamp((mintBand * 0.86f + mintCore * 0.72f + rightBody * 0.18f) * rightField, 0f, 1f));
+        color = Lerp(color, c2, Math.Clamp((goldBand * 0.90f + goldCore * 0.76f + rightBody * 0.16f) * rightField, 0f, 1f));
+        color = Lerp(color, c3, Math.Clamp((pinkBand * 0.84f + pinkCore * 0.70f + rightBody * 0.12f) * rightField, 0f, 1f));
+
+        color += c1 * mintBand * rightField * 0.10f;
+        color += c2 * goldBand * rightField * 0.11f;
+        color += c3 * pinkBand * rightField * 0.10f;
+        color = Lerp(color, new float3(1f, 1f, 1f), separation * 0.11f);
+        color += Lerp(c1, c3, 0.5f) * pointerBend * rightField * 0.10f;
+
+        return color;
+    }
+
+    /// <summary>
+    /// 星云分形布朗运动噪声（6层叠加，带旋转变换）
+    /// </summary>
+    /// <param name="x">X坐标</param>
+    /// <param name="y">Y坐标</param>
+    /// <returns>噪声值</returns>
+    private static float NebulaFbm(float x, float y)
+    {
+        float value = 0f;
+        float amplitude = 0.52f;
+        for (int i = 0; i < 6; i++)
+        {
+            value += amplitude * Noise(x, y);
+            float newX = 0.80f * x + 0.60f * y + 17.7f;
+            float newY = -0.60f * x + 0.80f * y + 17.7f;
+            x = newX * 2.03f;
+            y = newY * 2.03f;
+            amplitude *= 0.5f;
+        }
+        return value;
+    }
+
+    /// <summary>
+    /// 优化的星云分形布朗运动噪声（4层叠加，性能更好）
+    /// </summary>
+    /// <param name="x">X坐标</param>
+    /// <param name="y">Y坐标</param>
+    /// <returns>噪声值</returns>
+    private static float NebulaFbmOptimized(float x, float y)
+    {
+        float value = 0f;
+        float amplitude = 0.5f;
+        for (int i = 0; i < 4; i++)
+        {
+            value += amplitude * Noise(x, y);
+            float newX = 0.80f * x + 0.60f * y + 17.7f;
+            float newY = -0.60f * x + 0.80f * y + 17.7f;
+            x = newX * 2.0f;
+            y = newY * 2.0f;
+            amplitude *= 0.5f;
+        }
+        return value;
+    }
+
+    /// <summary>
+    /// 快速fbm（3层叠加，最高性能）
+    /// </summary>
+    /// <param name="x">X坐标</param>
+    /// <param name="y">Y坐标</param>
+    /// <returns>噪声值</returns>
+    private static float FastFbm(float x, float y)
+    {
+        float value = 0f;
+        float amplitude = 0.5f;
+        for (int i = 0; i < 3; i++)
+        {
+            value += amplitude * Noise(x, y);
+            x = x * 2.0f + 17.7f;
+            y = y * 2.0f + 17.7f;
+            amplitude *= 0.5f;
+        }
+        return value;
+    }
+
+    /// <summary>
+    /// 星云调色板（在4个颜色之间平滑插值）
+    /// </summary>
+    /// <param name="t">插值参数（0-1）</param>
+    /// <param name="c0">颜色0</param>
+    /// <param name="c1">颜色1</param>
+    /// <param name="c2">颜色2</param>
+    /// <param name="c3">颜色3</param>
+    /// <returns>插值后的颜色</returns>
+    private static float3 NebulaPalette(float t, float3 c0, float3 c1, float3 c2, float3 c3)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        float3 shadow = Lerp(c0, c1, SmoothStep(0.06f, 0.62f, t));
+        float3 body = Lerp(c1, c2, SmoothStep(0.30f, 0.82f, t));
+        float3 highlight = Lerp(c2, c3, SmoothStep(0.74f, 1f, t));
+        float3 restrained = Lerp(shadow, body, SmoothStep(0.26f, 0.72f, t));
+        return Lerp(restrained, highlight, SmoothStep(0.78f, 0.97f, t));
+    }
+
+    /// <summary>
+    /// 高斯函数（用于生成柔光带）
+    /// </summary>
+    /// <param name="value">输入值</param>
+    /// <param name="center">中心值</param>
+    /// <param name="width">宽度</param>
+    /// <returns>高斯值</returns>
+    private static float Gaussian(float value, float center, float width)
+    {
+        return MathF.Exp(-(value - center) * (value - center) / MathF.Max(width, 0.0001f));
+    }
+
+    /// <summary>
+    /// 2D哈希函数（用于生成随机数）
+    /// </summary>
+    /// <param name="x">X坐标</param>
+    /// <param name="y">Y坐标</param>
+    /// <returns>哈希值（0-1）</returns>
+    private static float Hash21(int x, int y)
+    {
+        float px = (x % 1000) / 1000f;
+        float py = (y % 1000) / 1000f;
+        px = (px * 123.34f) % 1f;
+        py = (py * 456.21f) % 1f;
+        float dot = px * (px + 45.32f) + py * (py + 45.32f);
+        return (dot * px * py) % 1f;
     }
 
     private static float StarLayer(float x, float y, float scale, float t, float density)

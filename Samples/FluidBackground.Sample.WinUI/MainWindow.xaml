@@ -5,188 +5,185 @@
     xmlns:fb="using:FluidBackground.WinUI"
     Title="FluidBackground 控件预览">
 
-    <TabView Margin="8"
-             Background="#1E1E28"
-             CanDragTabs="False"
-             IsAddTabButtonVisible="False">
+    <Grid Background="#1E1E28" Padding="12">
+        <Pivot>
+            <!-- ============ Tab 1: 流体背景 ============ -->
+            <PivotItem Header="流体背景">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="220"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-        <!-- ============ Tab 1: 流体背景 ============ -->
-        <TabViewItem Header="流体背景" IsClosable="False">
-            <Grid Padding="4">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="220"/>
-                    <RowDefinition Height="16"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                    <!-- 上方预览区域 -->
+                    <Border Grid.Row="0" 
+                            CornerRadius="12"
+                            Background="#252530">
+                        <fb:FluidBackgroundControl x:Name="PreviewControl"/>
+                    </Border>
 
-                <!-- 上方预览区域 -->
-                <Border Grid.Row="0" 
-                        CornerRadius="12"
-                        Background="#252530">
-                    <fb:FluidBackgroundControl x:Name="PreviewControl"/>
-                </Border>
+                    <!-- 下方调节区域 -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                <!-- 下方调节区域 -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                    <Grid>
+                            <!-- 第1行：配色方案 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="配色" Foreground="#A0A0B4" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                                      x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8"
+                                      SelectionChanged="OnColorChanged"/>
+
+                            <!-- 第2行：动画模式 | 渲染模式 -->
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Text="动画" Foreground="#A0A0B4" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <ComboBox Grid.Row="1" Grid.Column="1"
+                                      x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8"
+                                      SelectionChanged="OnModeChanged"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="2"
+                                       Text="渲染" Foreground="#A0A0B4" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <ComboBox Grid.Row="1" Grid.Column="3"
+                                      x:Name="RenderModeCombo" SelectedIndex="0" Margin="0,0,0,8">
+                                <ComboBoxItem>2D</ComboBoxItem>
+                                <ComboBoxItem>3D</ComboBoxItem>
+                                <ComboBoxItem>自动</ComboBoxItem>
+                            </ComboBox>
+
+                            <!-- 第3行：速度 -->
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       x:Name="SpeedLabel" Text="速度:1.0" Foreground="#A0A0B4" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <Slider Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                                    x:Name="SpeedSlider" Minimum="0.1" Maximum="3.0" Value="1.0"
+                                    Margin="0,0,0,8"
+                                    ValueChanged="OnSpeedChanged"/>
+
+                            <!-- 第4行：精度 -->
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       x:Name="QualityLabel" Text="精度:1.0x"
+                                       Foreground="#A0A0B4" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <Slider Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                                    x:Name="QualitySlider" Minimum="1" Maximum="4" Value="1"
+                                    TickFrequency="0.1"
+                                    Margin="0,0,0,8"
+                                    ValueChanged="OnQualityChanged"/>
+
+                            <!-- 第5行：浓度 -->
+                            <TextBlock Grid.Row="4" Grid.Column="0"
+                                       x:Name="DensityLabel" Text="浓度:0.30" Foreground="#A0A0B4" FontSize="12"
+                                       VerticalAlignment="Center" Margin="0,0,8,8"/>
+                            <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                                    x:Name="DensitySlider" Minimum="0.1" Maximum="1.0" Value="0.3"
+                                    Margin="0,0,0,8"
+                                    ValueChanged="OnDensityChanged"/>
+
+                            <!-- 第6行：效果开关 -->
+                            <CheckBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                                      x:Name="MeteorCheckBox" Content="流星" IsChecked="True"
+                                      Visibility="Collapsed" Foreground="#A0A0B4" Margin="0,0,8,8"
+                                      Checked="OnMeteorChanged" Unchecked="OnMeteorChanged"/>
+                            <CheckBox Grid.Row="5" Grid.Column="3"
+                                      x:Name="NebulaCheckBox" Content="星云" IsChecked="True"
+                                      Visibility="Collapsed" Foreground="#A0A0B4" Margin="0,0,0,8"
+                                      Checked="OnNebulaChanged" Unchecked="OnNebulaChanged"/>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </PivotItem>
+
+            <!-- ============ Tab 2: 闪电电弧进度 ============ -->
+            <PivotItem Header="闪电电弧进度">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 标题 -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="闪电电弧进度边界"
+                                   FontSize="20" FontWeight="Bold" Foreground="#E6E6F0"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="拖拽卡片或滑动进度条，观察电弧移动 / 抖动 / 分叉 / 残留 / 充能脉冲"
+                                   FontSize="12" Foreground="#7A7A90"
+                                   VerticalAlignment="Bottom" Margin="16,0,0,2"
+                                   TextWrapping="Wrap"/>
+                    </Grid>
+
+                    <!-- 预览卡片 -->
+                    <fb:LightningArcProgressControl x:Name="ArcControl"
+                                                    Grid.Row="1"
+                                                    Height="110"
+                                                    Margin="0,16,0,20"/>
+
+                    <!-- 主题与进度 -->
+                    <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- 第1行：配色方案 -->
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Text="配色" Foreground="#A0A0B4" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,8,8"/>
-                        <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
-                                  x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8">
-                            <ComboBoxItem>深海蓝紫</ComboBoxItem>
-                            <ComboBoxItem>日落橙红</ComboBoxItem>
-                            <ComboBoxItem>翡翠绿</ComboBoxItem>
-                            <ComboBoxItem>极光</ComboBoxItem>
-                            <ComboBoxItem>薰衣草</ComboBoxItem>
-                            <ComboBoxItem>樱花</ComboBoxItem>
+                        <TextBlock Grid.Column="0" Text="主题"
+                                   Foreground="#A0A0B4" FontSize="13"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="ThemeCombo" Grid.Column="1" SelectedIndex="0" Margin="0,0,24,0"
+                                  SelectionChanged="OnThemeChanged">
+                            <ComboBoxItem>Blue White Cyan（科技冷峻）</ComboBoxItem>
+                            <ComboBoxItem>Purple Navy（神秘能量）</ComboBoxItem>
+                            <ComboBoxItem>Clean（危险警告）</ComboBoxItem>
+                            <ComboBoxItem>Green Yellow（生化变异）</ComboBoxItem>
                         </ComboBox>
-
-                        <!-- 第2行：动画模式 | 渲染模式 -->
-                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                   Text="动画" Foreground="#A0A0B4" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,8,8"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1"
-                                  x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8">
-                            <ComboBoxItem>流体</ComboBoxItem>
-                            <ComboBoxItem>星空</ComboBoxItem>
-                        </ComboBox>
-
-                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                   Text="渲染" Foreground="#A0A0B4" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,8,8"/>
-                        <ComboBox Grid.Row="1" Grid.Column="3"
-                                  x:Name="RenderModeCombo" SelectedIndex="0" Margin="0,0,0,8">
-                            <ComboBoxItem>2D</ComboBoxItem>
-                            <ComboBoxItem>3D</ComboBoxItem>
-                            <ComboBoxItem>自动</ComboBoxItem>
-                        </ComboBox>
-
-                        <!-- 第3行：速度 -->
-                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                   x:Name="SpeedLabel" Text="速度:1.0" Foreground="#A0A0B4" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,8,8"/>
-                        <Slider Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
-                                x:Name="SpeedSlider" Minimum="0.1" Maximum="3.0" Value="1.0"
-                                Margin="0,0,0,8"/>
-
-                        <!-- 第4行：精度 -->
-                        <TextBlock Grid.Row="3" Grid.Column="0"
-                                   x:Name="QualityLabel" Text="精度:1.0x"
-                                   Foreground="#A0A0B4" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,8,8"/>
-                        <Slider Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
-                                x:Name="QualitySlider" Minimum="1" Maximum="4" Value="1"
-                                TickFrequency="0.1"
-                                Margin="0,0,0,8"/>
-
-                        <!-- 第5行：浓度 -->
-                        <TextBlock Grid.Row="4" Grid.Column="0"
-                                   x:Name="DensityLabel" Text="浓度:0.30" Foreground="#A0A0B4" FontSize="12"
-                                   VerticalAlignment="Center" Margin="0,0,8,8"/>
-                        <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
-                                x:Name="DensitySlider" Minimum="0.1" Maximum="1.0" Value="0.3"
-                                Margin="0,0,0,8"/>
-
-                        <!-- 第6行：效果开关 -->
-                        <CheckBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
-                                  x:Name="MeteorCheckBox" Content="流星" IsChecked="True"
-                                  Visibility="Collapsed" Foreground="#A0A0B4" Margin="0,0,8,8"/>
-                        <CheckBox Grid.Row="5" Grid.Column="3"
-                                  x:Name="NebulaCheckBox" Content="星云" IsChecked="True"
-                                  Visibility="Collapsed" Foreground="#A0A0B4" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Column="2" Text="进度"
+                                   Foreground="#A0A0B4" FontSize="13"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Grid Grid.Column="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="ProgressSlider" Grid.Column="0"
+                                    Minimum="0" Maximum="100" Value="30"
+                                    VerticalAlignment="Center"
+                                    ValueChanged="OnProgressChanged"/>
+                            <TextBlock x:Name="ProgressLabel" Grid.Column="1"
+                                       Text="30%" Foreground="#00F5FF" FontSize="13" FontWeight="Bold"
+                                       VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="48" TextAlignment="Right"/>
+                        </Grid>
                     </Grid>
-                </ScrollViewer>
-            </Grid>
-        </TabViewItem>
 
-        <!-- ============ Tab 2: 闪电电弧进度 ============ -->
-        <TabViewItem Header="闪电电弧进度" IsClosable="False">
-            <Grid Padding="8">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- 标题 -->
-                <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="闪电电弧进度边界"
-                               FontSize="20" FontWeight="Bold" Foreground="#E6E6F0"/>
-                    <TextBlock Grid.Column="1"
-                               Text="拖拽卡片或滑动进度条，观察电弧移动 / 抖动 / 分叉 / 残留 / 充能脉冲"
-                               FontSize="12" Foreground="#7A7A90"
-                               VerticalAlignment="Bottom" Margin="16,0,0,2"
-                               TextWrapping="Wrap"/>
+                    <!-- 说明 -->
+                    <TextBlock Grid.Row="3"
+                               Text="进度达到 100% 时电弧会脉冲增强后稳定。拖动时抖动幅度临时增大，松开后约 0.5 秒衰减回原值。"
+                               TextWrapping="Wrap" FontSize="12" Foreground="#6A6A80"
+                               Margin="0,20,0,0"/>
                 </Grid>
-
-                <!-- 预览卡片 -->
-                <fb:LightningArcProgressControl x:Name="ArcControl"
-                                                Grid.Row="1"
-                                                Height="110"
-                                                Margin="0,16,0,20"/>
-
-                <!-- 主题与进度 -->
-                <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="主题"
-                               Foreground="#A0A0B4" FontSize="13"
-                               VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <ComboBox x:Name="ThemeCombo" Grid.Column="1" SelectedIndex="0" Margin="0,0,24,0">
-                        <ComboBoxItem>Blue White Cyan（科技冷峻）</ComboBoxItem>
-                        <ComboBoxItem>Purple Navy（神秘能量）</ComboBoxItem>
-                        <ComboBoxItem>Clean（危险警告）</ComboBoxItem>
-                        <ComboBoxItem>Green Yellow（生化变异）</ComboBoxItem>
-                    </ComboBox>
-                    <TextBlock Grid.Column="2" Text="进度"
-                               Foreground="#A0A0B4" FontSize="13"
-                               VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <Grid Grid.Column="3">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Slider x:Name="ProgressSlider" Grid.Column="0"
-                                Minimum="0" Maximum="100" Value="30"
-                                VerticalAlignment="Center"/>
-                        <TextBlock x:Name="ProgressLabel" Grid.Column="1"
-                                   Text="30%" Foreground="#00F5FF" FontSize="13" FontWeight="Bold"
-                                   VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="48" TextAlignment="Right"/>
-                    </Grid>
-                </Grid>
-
-                <!-- 说明 -->
-                <TextBlock Grid.Row="3"
-                           Text="进度达到 100% 时电弧会脉冲增强后稳定。拖动时抖动幅度临时增大，松开后约 0.5 秒衰减回原值。"
-                           TextWrapping="Wrap" FontSize="12" Foreground="#6A6A80"
-                           Margin="0,20,0,0"/>
-            </Grid>
-        </TabViewItem>
-    </TabView>
+            </PivotItem>
+        </Pivot>
+    </Grid>
 </Window>

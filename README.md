@@ -1,6 +1,6 @@
 # FluidBackground
 
-一个 .NET 8 流体背景渲染库：在任意 UI 框架中嵌入一块流动的渐变动画背景，支持**流体**与**星空**两种效果模式与鼠标指针交互。
+一个 .NET 8 流体背景渲染库：在任意 UI 框架中嵌入一块流动的渐变动画背景，支持**流体**、**星空**、**星云胶囊**和**极光**四种效果模式与鼠标指针交互。
 
 内置双渲染后端：
 
@@ -68,7 +68,7 @@ dotnet run --project Samples/FluidBackground.Sample.WinUI -p:Platform=x64
 `SkiaRenderer.cs` 不依赖 GPU，把着色器算法用 C# 重新实现：
 
 1. 按 `RenderQuality` 缩放渲染分辨率（`quality=1` 为 1:1，越大越省 CPU，最终拉伸回目标尺寸）。
-2. 用 `unsafe` 指针遍历每个像素，调用 `CalculatePixel(u, v, time)` 按 `Mode` 分发到 `FluidEffect` / `StarfieldEffect` 计算 RGB 颜色，结果打包为 ARGB `uint` 直接写 `SKBitmap` 内存。
+2. 用 `unsafe` 指针遍历每个像素，调用 `CalculatePixel(u, v, time)` 按 `Mode` 分发到 `FluidEffect` / `StarfieldEffect` / `NebulaEffect` / `AuroraEffect` 计算 RGB 颜色，结果打包为 ARGB `uint` 直接写 `SKBitmap` 内存。
 3. `canvas.DrawBitmap(小图, 目标矩形)` 拉伸到控件大小。
 
 算法核心（与着色器一一对应）：
@@ -76,6 +76,8 @@ dotnet run --project Samples/FluidBackground.Sample.WinUI -p:Platform=x64
 - `Hash` + `Noise`：值噪声，整数格点哈希后做 smoothstep 双线性插值；
 - `FluidEffect`：三层噪声以不同频率/速度叠加成 `blend`，在 N 个颜色之间线性插值（域扭曲的简化版）；
 - `StarfieldEffect`：网格哈希生成随机星点（两层、闪烁、缓慢漂移），fbm 噪声叠加星云色块，周期性流星划过；
+- `NebulaEffect`：多层噪声、星点、云团与旋涡构成宇宙星云材质，支持指针交互影响旋涡方向；
+- `AuroraEffect`：低频噪声与多条柔光带生成平滑迁移的渐变，支持 Polar、Dubdot、Vercel 三种配置文件；
 - 指针交互：指针周围 `SmoothStep(PointerRadius, 0, dist)` 决定影响强度，对该处颜色提亮。
 
 ### 3D 后端：`OpenGLRenderer`（GPU 着色器）
@@ -83,10 +85,12 @@ dotnet run --project Samples/FluidBackground.Sample.WinUI -p:Platform=x64
 `OpenGLRenderer.cs` 用 Silk.NET 绑定 OpenGL 3.3，流程：
 
 1. **着色器**：顶点着色器内嵌（全屏两个三角形），片元着色器从嵌入资源加载 `FluidBackground.Core.Shaders.fluid.frag`（GLSL 330）。
-2. **离屏渲染**：`EnsureFramebuffer` 按目标尺寸创建 FBO + 纹理；每帧把配置通过 uniform（`iTime`、`iSpeed`、`iDensity`、`iMode`、`iPointer`、`iColor0~3` 等）传入，绘制全屏三角形。
+2. **离屏渲染**：`EnsureFramebuffer` 按目标尺寸创建 FBO + 纹理；每帧把配置通过 uniform（`iTime`、`iSpeed`、`iDensity`、`iMode`、`iPointer`、`iColor0~3`、`iSeed`、`iMotion`、`iAuroraProfile` 等）传入，绘制全屏三角形。
 3. **回读**：`glReadPixels` 把 RGBA 像素读回 `byte[]`，由于 OpenGL 原点在左下，需 `FlipImageVertically` 垂直翻转，再转成 `SKBitmap` 或直接返回字节数组。
 
 `fluid.frag` 比 SKSL 版多了 3D 噪声（`noise3D` / `fbm3D`，把 z 轴作为时间维度折叠进 2D 噪声），三种效果均加入体积扰动，观感更立体。**修改效果时必须同步维护两套着色器**（`fluid.sksl` 与 `fluid.frag`）。
+
+新增的 Nebula 和 Aurora 效果使用独立的噪声函数（`hash21`、`nebulaNoise`、`nebulaFbm`）和渲染函数（`renderNebula`、`renderPolar`、`renderDubdot`、`renderVercel`），支持指针交互影响渲染效果。
 
 ### 适配层：`FluidBackgroundControl`
 
@@ -112,15 +116,40 @@ dotnet run --project Samples/FluidBackground.Sample.WinUI -p:Platform=x64
 | `Colors` | 深蓝→中蓝→浅蓝→紫（4 色） | 渐变颜色数组（3–6 色） |
 | `Speed` | 1.0 | 动画速度（0.1–5.0） |
 | `Density` | 0.3 | 图案分布浓度（0.0–1.0），越小纹理越稀疏、观感越淡雅，1.0 为最浓 |
-| `Mode` | `Fluid` | 效果模式：`Fluid`（流体）/ `Starfield`（星空） |
+| `Mode` | `Fluid` | 效果模式：`Fluid`（流体）/ `Starfield`（星空）/ `Nebula`（星云胶囊）/ `Aurora`（极光） |
 | `RenderMode` | `Auto` | `Auto` / `Force2D` / `Force3D` |
 | `RenderQuality` | 1.0 | 渲染精度（2D 后端的内部分辨率系数，1=最高；星空模式为保星点清晰始终全分辨率，忽略此项） |
 | `EnableMeteor` | true | 是否显示流星（仅星空模式生效） |
 | `EnableNebula` | true | 是否显示星云（仅星空模式生效） |
 | `EnablePointerInteraction` | true | 是否启用指针交互 |
 | `PointerRadius` | 0.3 | 指针影响半径（相对画布，0.0–1.0） |
+| `Seed` | 1.7 | 随机种子（用于星云和极光效果的形态生成） |
+| `AuroraProfile` | `Polar` | 极光效果配置文件（仅在Aurora模式下生效）：`Polar`（深色胶囊，橙色、洋红与暖白柔光带）/ `Dubdot`（白色胶囊，浅蓝、天蓝与青蓝柔光带）/ `Vercel`（白色胶囊，薄荷绿、淡黄与浅粉柔光带） |
 
 `FluidColor` 是归一化 RGB 的 `readonly struct`，支持 `FromHex` / `FromBytes` / `FromSKColor` 等构造方式。
+
+### 预设配置
+
+`NebulaPresets`（`FluidBackground.Core/Models/NebulaPresets.cs`）提供了 9 组预设配置，灵感来自 [nebula-capsules](https://github.com/yizhe21803/nebula-capsules) 项目：
+
+| 预设ID | 代码 | 名称 | 色系 | 模式 | 说明 |
+|---|---|---|---|---|---|
+| `original` | NC-01 | ORIGINAL | 暖色 | Nebula | 奶油白、橙色、粉色、紫色 |
+| `ocean` | NC-02 | OCEAN | 冷色 | Nebula | 浅蓝、天蓝、蓝色、靛蓝 |
+| `klein` | NC-03 | KLEIN | 冷色 | Nebula | 浅蓝、深蓝、深紫、橙色 |
+| `ultraviolet` | NC-04 | ULTRAVIOLET | 冷色 | Nebula | 浅紫、紫色、深紫、黄绿 |
+| `chrome` | NC-05 | CHROME | 冷色 | Nebula | 浅灰、银灰、灰、深灰 |
+| `plus` | NC-06 | PLUS | 暖色 | Nebula | 奶油白、金色、橙色、红色 |
+| `polar` | NC-07 | POLAR | 暖色 | Aurora | 深色背景、橙色、洋红、暖白 |
+| `dubdot` | NC-08 | DUBDOT | 冷色 | Aurora | 白色背景、浅蓝、天蓝、青蓝 |
+| `vercel` | NC-09 | VERCEL | 暖色 | Aurora | 白色背景、薄荷绿、淡黄、浅粉 |
+
+使用预设示例：
+```csharp
+var preset = NebulaPresets.GetById("polar");
+var config = NebulaPresets.ToConfig(preset);
+renderer.UpdateConfig(config);
+```
 
 ## 目录结构
 
@@ -128,7 +157,7 @@ dotnet run --project Samples/FluidBackground.Sample.WinUI -p:Platform=x64
 FluidBackground.Core/            渲染核心（无 UI 依赖）
 ├─ FluidRenderer.cs              门面：后端选择 + 线程安全
 ├─ Renderers/                    IFluidRenderer 接口与两个后端实现
-├─ Models/                       FluidConfig / FluidColor / FluidMode / RenderMode
+├─ Models/                       FluidConfig / FluidColor / FluidMode / RenderMode / AuroraProfile / NebulaPresets
 └─ Shaders/                      fluid.sksl（Skia 版）/ fluid.frag（OpenGL 版），嵌入资源
 FluidBackground.{WPF,WinForms,WinUI,Avalonia11,Avalonia12}/
 └─ FluidBackgroundControl.cs     各平台控件（渲染循环 + 位图呈现 + 指针交互）
@@ -140,8 +169,10 @@ Samples/FluidBackground.Sample.*/  各平台可运行示例
 - **新增渲染后端**：实现 `IFluidRenderer`（`Initialize` / `RenderFrame` / `RenderToBitmap` / `UpdateConfig` / `SetPointerPosition` / `Dispose`），并在 `FluidRenderer.InitializeRenderer` 的 `RenderMode` 分支注册。
 - **新增 UI 平台**：新建 `FluidBackground.<框架>` 项目，提供 `FluidBackgroundControl` 控件（照抄 WPF 版的"渲染循环 + 位图呈现 + 指针上报"三个职责），配套一个 Sample，并注册进 `FluidBackground.slnx`（WinUI 条目需 `Platform="x64"`）。
 - **修改效果算法**：同步更新 `Shaders/fluid.sksl`（Skia 后端直接消费）与 `Shaders/fluid.frag`（OpenGL 后端嵌入资源加载），以及 `SkiaRenderer.cs` 中对应的 C# 实现。
+- **新增效果模式**：在 `FluidMode` 枚举中添加新值，在着色器中添加对应的渲染函数，在 `SkiaRenderer.cs` 和 `OpenGLRenderer.cs` 中添加对应的 C# 实现，在 `FluidConfig` 中添加必要的配置属性。
 
 ## 已知限制
 
 - 3D 后端需要外部提供有效的 OpenGL 3.3+ 上下文（`CreateWithOpenGL`），无上下文时初始化失败，`Auto` 模式会自动回退到 2D。
 - 2D 后端逐像素计算在超大控件 + 低 `RenderQuality` 下 CPU 占用较高，建议大尺寸场景配合 `RenderQuality` 调优或选用 3D 后端。
+- Nebula 和 Aurora 效果在 2D 后端下性能较低，建议使用 3D 后端以获得更好的性能。

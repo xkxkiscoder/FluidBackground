@@ -36,24 +36,16 @@
                                    Text="配色" Foreground="#A0A0B4" FontSize="12"
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
-                                  x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8">
-                            <ComboBoxItem>深海蓝紫</ComboBoxItem>
-                            <ComboBoxItem>日落橙红</ComboBoxItem>
-                            <ComboBoxItem>翡翠绿</ComboBoxItem>
-                            <ComboBoxItem>极光</ComboBoxItem>
-                            <ComboBoxItem>薰衣草</ComboBoxItem>
-                            <ComboBoxItem>樱花</ComboBoxItem>
-                        </ComboBox>
+                                  x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8"
+                                  SelectionChanged="OnColorChanged"/>
 
                         <!-- 第2行：动画模式 | 渲染模式 -->
                         <TextBlock Grid.Row="1" Grid.Column="0"
                                    Text="动画" Foreground="#A0A0B4" FontSize="12"
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <ComboBox Grid.Row="1" Grid.Column="1"
-                                  x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8">
-                            <ComboBoxItem>流体</ComboBoxItem>
-                            <ComboBoxItem>星空</ComboBoxItem>
-                        </ComboBox>
+                                  x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8"
+                                  SelectionChanged="OnModeChanged"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="2"
                                    Text="渲染" Foreground="#A0A0B4" FontSize="12"
@@ -71,7 +63,8 @@
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <Slider Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
                                 x:Name="SpeedSlider" Minimum="0.1" Maximum="3.0" Value="1.0"
-                                Margin="0,0,0,8"/>
+                                Margin="0,0,0,8"
+                                ValueChanged="OnSpeedChanged"/>
 
                         <!-- 第4行：精度 -->
                         <TextBlock Grid.Row="3" Grid.Column="0"
@@ -81,7 +74,8 @@
                         <Slider Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
                                 x:Name="QualitySlider" Minimum="1" Maximum="4" Value="1"
                                 TickFrequency="0.1" IsSnapToTickEnabled="False"
-                                Margin="0,0,0,8"/>
+                                Margin="0,0,0,8"
+                                ValueChanged="OnQualityChanged"/>
 
                         <!-- 第5行：浓度 -->
                         <TextBlock Grid.Row="4" Grid.Column="0"
@@ -89,7 +83,8 @@
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <Slider Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
                                 x:Name="DensitySlider" Minimum="0.1" Maximum="1.0" Value="0.3"
-                                Margin="0,0,0,8"/>
+                                Margin="0,0,0,8"
+                                ValueChanged="OnDensityChanged"/>
 
                         <!-- 第6行：效果开关 -->
                         <CheckBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"

@@ -13,7 +13,17 @@ public enum FluidMode
     /// <summary>
     /// 星空效果（闪烁星点、星云、流星）
     /// </summary>
-    Starfield
+    Starfield,
+
+    /// <summary>
+    /// 星云胶囊效果（多层噪声、星点、云团与旋涡构成宇宙星云材质）
+    /// </summary>
+    Nebula,
+
+    /// <summary>
+    /// 极光效果（低频噪声与多条柔光带生成平滑迁移的渐变）
+    /// </summary>
+    Aurora
 }
 
 /// <summary>
@@ -38,6 +48,27 @@ public enum RenderMode
 }
 
 /// <summary>
+/// 极光效果配置文件
+/// </summary>
+public enum AuroraProfile
+{
+    /// <summary>
+    /// POLAR：深色胶囊，橙色、洋红与暖白柔光带
+    /// </summary>
+    Polar,
+
+    /// <summary>
+    /// DUBDOT：白色胶囊，浅蓝、天蓝与青蓝柔光带
+    /// </summary>
+    Dubdot,
+
+    /// <summary>
+    /// VERCEL：白色胶囊，薄荷绿、淡黄与浅粉柔光带
+    /// </summary>
+    Vercel
+}
+
+/// <summary>
 /// 流体背景配置
 /// </summary>
 public class FluidConfig
@@ -58,7 +89,7 @@ public class FluidConfig
     public float Density { get; set; } = 0.3f;
 
     /// <summary>
-    /// 效果模式（Fluid / Starfield）
+    /// 效果模式（Fluid / Starfield / Nebula / Aurora）
     /// </summary>
     public FluidMode Mode { get; set; } = FluidMode.Fluid;
 
@@ -93,6 +124,16 @@ public class FluidConfig
     public float PointerRadius { get; set; } = 0.3f;
 
     /// <summary>
+    /// 随机种子（用于星云和极光效果的形态生成）
+    /// </summary>
+    public float Seed { get; set; } = 1.7f;
+
+    /// <summary>
+    /// 极光效果配置文件（仅在Aurora模式下生效）
+    /// </summary>
+    public AuroraProfile AuroraProfile { get; set; } = AuroraProfile.Polar;
+
+    /// <summary>
     /// 默认颜色方案
     /// </summary>
     public static FluidColor[] DefaultColors =>
@@ -117,6 +158,8 @@ public class FluidConfig
         EnableMeteor = EnableMeteor,
         EnableNebula = EnableNebula,
         EnablePointerInteraction = EnablePointerInteraction,
-        PointerRadius = PointerRadius
+        PointerRadius = PointerRadius,
+        Seed = Seed,
+        AuroraProfile = AuroraProfile
     };
 }

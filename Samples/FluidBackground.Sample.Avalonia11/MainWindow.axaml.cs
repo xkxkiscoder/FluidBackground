@@ -17,15 +17,17 @@ public partial class MainWindow : Window
 
     private void InitializePreview()
     {
+        // 初始化动画模式列表
+        InitializeModeList();
+
+        // 初始化颜色列表
+        UpdateColorList(FluidMode.Fluid);
+
+        // 使用默认颜色预设初始化
+        var defaultColor = FluidPresets.GeneralColors[0];
         PreviewControl.Config = new FluidConfig
         {
-            Colors =
-            [
-                FluidColor.FromHex("#0D1B2A"),
-                FluidColor.FromHex("#1B2838"),
-                FluidColor.FromHex("#2E4057"),
-                FluidColor.FromHex("#7B2D8E")
-            ],
+            Colors = defaultColor.Colors,
             Speed = 1.0f,
             Density = 0.3f,
             Mode = FluidMode.Fluid,
@@ -44,6 +46,15 @@ public partial class MainWindow : Window
         };
     }
 
+    private void InitializeModeList()
+    {
+        ModeCombo.Items.Clear();
+        foreach (var mode in FluidPresets.RenderModes)
+        {
+            ModeCombo.Items.Add(new ComboBoxItem { Content = mode.Name });
+        }
+        ModeCombo.SelectedIndex = 0;
+    }
     private void BindEvents()
     {
         ColorCombo.SelectionChanged += OnColorChanged;
@@ -59,69 +70,78 @@ public partial class MainWindow : Window
 
     private void OnColorChanged(object? sender, SelectionChangedEventArgs e)
     {
-        var colors = ColorCombo.SelectedIndex switch
+        if (ColorCombo?.SelectedIndex is null or < 0)
+            return;
+
+        var mode = GetCurrentMode();
+        var colors = FluidPresets.GetColorsForMode(mode);
+
+        if (ColorCombo.SelectedIndex < colors.Length)
         {
-            0 => // 深海蓝紫
-            [
-                FluidColor.FromHex("#0D1B2A"),
-                FluidColor.FromHex("#1B2838"),
-                FluidColor.FromHex("#2E4057"),
-                FluidColor.FromHex("#7B2D8E")
-            ],
-            1 => // 日落橙红
-            [
-                FluidColor.FromHex("#FF6B35"),
-                FluidColor.FromHex("#F7931E"),
-                FluidColor.FromHex("#FF4444"),
-                FluidColor.FromHex("#CC0000")
-            ],
-            2 => // 翡翠绿
-            [
-                FluidColor.FromHex("#064E3B"),
-                FluidColor.FromHex("#047857"),
-                FluidColor.FromHex("#10B981"),
-                FluidColor.FromHex("#6EE7B7")
-            ],
-            3 => // 极光
-            [
-                FluidColor.FromHex("#00B4D8"),
-                FluidColor.FromHex("#0077B6"),
-                FluidColor.FromHex("#90E0EF"),
-                FluidColor.FromHex("#CAF0F8")
-            ],
-            4 => // 薰衣草
-            [
-                FluidColor.FromHex("#7C3AED"),
-                FluidColor.FromHex("#A78BFA"),
-                FluidColor.FromHex("#C4B5FD"),
-                FluidColor.FromHex("#DDD6FE")
-            ],
-            5 => // 樱花
-            [
-                FluidColor.FromHex("#ED3A7C"),
-                FluidColor.FromHex("#FAB7A7"),
-                FluidColor.FromHex("#FDB5C4"),
-                FluidColor.FromHex("#FED6ED")
-            ],
-            _ => FluidConfig.DefaultColors
-        };
-        UpdateConfig(c => c.Colors = colors);
+            var color = colors[ColorCombo.SelectedIndex];
+            UpdateConfig(c => c.Colors = color.Colors);
+        }
     }
 
     private void OnModeChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (ModeCombo?.SelectedIndex is null or < 0)
+            return;
+
         var mode = ModeCombo.SelectedIndex switch
         {
             0 => FluidMode.Fluid,
             1 => FluidMode.Starfield,
+            2 => FluidMode.Nebula,
+            3 => FluidMode.Aurora,
             _ => FluidMode.Fluid
         };
-        var showStarfieldOptions = mode == FluidMode.Starfield;
-        MeteorCheckBox.IsVisible = showStarfieldOptions;
-        NebulaCheckBox.IsVisible = showStarfieldOptions;
-        QualityLabel.IsVisible = !showStarfieldOptions;
-        QualitySlider.IsVisible = !showStarfieldOptions;
+
+        var isStarfield = mode == FluidMode.Starfield;
+        var isNebulaOrAurora = mode == FluidMode.Nebula || mode == FluidMode.Aurora;
+
+        // 星空模式选项
+        MeteorCheckBox.IsVisible = isStarfield;
+        NebulaCheckBox.IsVisible = isStarfield;
+
+        // 精度选项（星空和星云/极光模式隐藏）
+        QualityLabel.IsVisible = !isStarfield && !isNebulaOrAurora;
+        QualitySlider.IsVisible = !isStarfield && !isNebulaOrAurora;
+
+        // 浓度选项（星云/极光模式隐藏，因为这两种效果不使用浓度）
+        DensityLabel.IsVisible = !isNebulaOrAurora;
+        DensitySlider.IsVisible = !isNebulaOrAurora;
+
+        // 更新颜色列表
+        UpdateColorList(mode);
+
         UpdateConfig(c => c.Mode = mode);
+    }
+
+    private void UpdateColorList(FluidMode mode)
+    {
+        var colors = FluidPresets.GetColorsForMode(mode);
+        ColorCombo.Items.Clear();
+        foreach (var color in colors)
+        {
+            ColorCombo.Items.Add(new ComboBoxItem { Content = color.Name });
+        }
+        ColorCombo.SelectedIndex = 0;
+    }
+
+    private FluidMode GetCurrentMode()
+    {
+        if (ModeCombo?.SelectedIndex is null or < 0)
+            return FluidMode.Fluid;
+
+        return ModeCombo.SelectedIndex switch
+        {
+            0 => FluidMode.Fluid,
+            1 => FluidMode.Starfield,
+            2 => FluidMode.Nebula,
+            3 => FluidMode.Aurora,
+            _ => FluidMode.Fluid
+        };
     }
 
     private void OnSpeedChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -155,12 +175,15 @@ public partial class MainWindow : Window
 
     private void OnRenderModeChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (RenderModeCombo?.SelectedIndex is null or < 0)
+            return;
+
         var mode = RenderModeCombo.SelectedIndex switch
         {
-            0 => RenderMode.Force2D,
-            1 => RenderMode.Force3D,
-            2 => RenderMode.Auto,
-            _ => RenderMode.Auto
+            0 => Core.Models.RenderMode.Force2D,
+            1 => Core.Models.RenderMode.Force3D,
+            2 => Core.Models.RenderMode.Auto,
+            _ => Core.Models.RenderMode.Auto
         };
         UpdateConfig(c => c.RenderMode = mode);
     }
@@ -168,6 +191,9 @@ public partial class MainWindow : Window
     private void OnThemeChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (ArcControl.Config is not LightningArcConfig config)
+            return;
+
+        if (ThemeCombo?.SelectedIndex is null or < 0)
             return;
 
         var theme = ThemeCombo.SelectedIndex switch

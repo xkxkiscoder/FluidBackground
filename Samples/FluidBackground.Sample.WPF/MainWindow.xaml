@@ -47,34 +47,21 @@
                                    Text="配色" Foreground="#A0A0B4" FontSize="12"
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
-                                  x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8">
-                            <ComboBoxItem>深海蓝紫</ComboBoxItem>
-                            <ComboBoxItem>日落橙红</ComboBoxItem>
-                            <ComboBoxItem>翡翠绿</ComboBoxItem>
-                            <ComboBoxItem>极光</ComboBoxItem>
-                            <ComboBoxItem>薰衣草</ComboBoxItem>
-                            <ComboBoxItem>樱花</ComboBoxItem>
-                        </ComboBox>
+                                  x:Name="ColorCombo" SelectedIndex="0" Margin="0,0,0,8"
+                                  SelectionChanged="OnColorChanged"/>
 
                         <!-- 第2行：动画模式 | 渲染模式 -->
                         <TextBlock Grid.Row="1" Grid.Column="0"
                                    Text="动画" Foreground="#A0A0B4" FontSize="12"
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <ComboBox Grid.Row="1" Grid.Column="1"
-                                  x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8">
-                            <ComboBoxItem>流体</ComboBoxItem>
-                            <ComboBoxItem>星空</ComboBoxItem>
-                        </ComboBox>
+                                  x:Name="ModeCombo" SelectedIndex="0" Margin="0,0,8,8"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="2"
                                    Text="渲染" Foreground="#A0A0B4" FontSize="12"
                                    VerticalAlignment="Center" Margin="0,0,8,8"/>
                         <ComboBox Grid.Row="1" Grid.Column="3"
-                                  x:Name="RenderModeCombo" SelectedIndex="0" Margin="0,0,0,8">
-                            <ComboBoxItem>2D</ComboBoxItem>
-                            <ComboBoxItem>3D</ComboBoxItem>
-                            <ComboBoxItem>自动</ComboBoxItem>
-                        </ComboBox>
+                                  x:Name="RenderModeCombo" SelectedIndex="0" Margin="0,0,0,8"/>
 
                         <!-- 第3行：速度 -->
                         <TextBlock Grid.Row="2" Grid.Column="0"
@@ -106,7 +93,7 @@
                         <CheckBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
                                   x:Name="MeteorCheckBox" Content="流星" IsChecked="True"
                                   Visibility="Collapsed" Foreground="#A0A0B4" Margin="0,0,8,8"/>
-                        <CheckBox Grid.Row="5" Grid.Column="3"
+                        <CheckBox Grid.Row="6" Grid.Column="3"
                                   x:Name="NebulaCheckBox" Content="星云" IsChecked="True"
                                   Visibility="Collapsed" Foreground="#A0A0B4" Margin="0,0,0,8"/>
                     </Grid>

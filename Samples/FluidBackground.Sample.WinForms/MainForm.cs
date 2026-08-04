@@ -96,8 +96,6 @@ public partial class MainForm : Form
         _colorCombo.Location = new Point(60, 237);
         _colorCombo.Width = 200;
         _colorCombo.DropDownStyle = ComboBoxStyle.DropDownList;
-        _colorCombo.Items.AddRange(new object[] { "深海蓝紫", "日落橙红", "翡翠绿", "极光", "薰衣草", "樱花" });
-        _colorCombo.SelectedIndex = 0;
         _fluidTab.Controls.Add(_colorCombo);
 
         // 动画模式标签
@@ -115,8 +113,6 @@ public partial class MainForm : Form
         _modeCombo.Location = new Point(60, 277);
         _modeCombo.Width = 120;
         _modeCombo.DropDownStyle = ComboBoxStyle.DropDownList;
-        _modeCombo.Items.AddRange(new object[] { "流体", "星空" });
-        _modeCombo.SelectedIndex = 0;
         _fluidTab.Controls.Add(_modeCombo);
 
         // 渲染模式标签
@@ -130,7 +126,7 @@ public partial class MainForm : Form
         };
         _fluidTab.Controls.Add(renderLabel);
 
-        // 渲染模式下拉框
+        // 渲染模式下拉框（硬编码）
         _renderModeCombo.Location = new Point(240, 277);
         _renderModeCombo.Width = 120;
         _renderModeCombo.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -291,15 +287,17 @@ public partial class MainForm : Form
 
     private void InitializePreview()
     {
+        // 初始化动画模式列表
+        InitializeModeList();
+
+        // 初始化颜色列表
+        UpdateColorList(FluidMode.Fluid);
+
+        // 使用默认颜色预设初始化
+        var defaultColor = FluidPresets.GeneralColors[0];
         _previewControl.Config = new FluidConfig
         {
-            Colors =
-            [
-                FluidColor.FromHex("#0D1B2A"),
-                FluidColor.FromHex("#1B2838"),
-                FluidColor.FromHex("#2E4057"),
-                FluidColor.FromHex("#7B2D8E")
-            ],
+            Colors = defaultColor.Colors,
             Speed = 1.0f,
             Density = 0.3f,
             Mode = FluidMode.Fluid,
@@ -318,9 +316,18 @@ public partial class MainForm : Form
         };
     }
 
+    private void InitializeModeList()
+    {
+        _modeCombo.Items.Clear();
+        foreach (var mode in FluidPresets.RenderModes)
+        {
+            _modeCombo.Items.Add(mode.Name);
+        }
+        _modeCombo.SelectedIndex = 0;
+    }
+
     private void BindEvents()
     {
-        _colorCombo.SelectedIndexChanged += OnColorChanged;
         _modeCombo.SelectedIndexChanged += OnModeChanged;
         _speedSlider.ValueChanged += OnSpeedChanged;
         _densitySlider.ValueChanged += OnDensityChanged;
@@ -335,69 +342,70 @@ public partial class MainForm : Form
 
     private void OnColorChanged(object? sender, EventArgs e)
     {
-        var colors = _colorCombo.SelectedIndex switch
+        if (_colorCombo.SelectedIndex < 0)
+            return;
+
+        var mode = GetCurrentMode();
+        var colors = FluidPresets.GetColorsForMode(mode);
+
+        if (_colorCombo.SelectedIndex < colors.Length)
         {
-            0 => // 深海蓝紫
-            [
-                FluidColor.FromHex("#0D1B2A"),
-                FluidColor.FromHex("#1B2838"),
-                FluidColor.FromHex("#2E4057"),
-                FluidColor.FromHex("#7B2D8E")
-            ],
-            1 => // 日落橙红
-            [
-                FluidColor.FromHex("#FF6B35"),
-                FluidColor.FromHex("#F7931E"),
-                FluidColor.FromHex("#FF4444"),
-                FluidColor.FromHex("#CC0000")
-            ],
-            2 => // 翡翠绿
-            [
-                FluidColor.FromHex("#064E3B"),
-                FluidColor.FromHex("#047857"),
-                FluidColor.FromHex("#10B981"),
-                FluidColor.FromHex("#6EE7B7")
-            ],
-            3 => // 极光
-            [
-                FluidColor.FromHex("#00B4D8"),
-                FluidColor.FromHex("#0077B6"),
-                FluidColor.FromHex("#90E0EF"),
-                FluidColor.FromHex("#CAF0F8")
-            ],
-            4 => // 薰衣草
-            [
-                FluidColor.FromHex("#7C3AED"),
-                FluidColor.FromHex("#A78BFA"),
-                FluidColor.FromHex("#C4B5FD"),
-                FluidColor.FromHex("#DDD6FE")
-            ],
-            5 => // 樱花
-            [
-                FluidColor.FromHex("#ED3A7C"),
-                FluidColor.FromHex("#FAB7A7"),
-                FluidColor.FromHex("#FDB5C4"),
-                FluidColor.FromHex("#FED6ED")
-            ],
-            _ => FluidConfig.DefaultColors
-        };
-        UpdateConfig(c => c.Colors = colors);
+            var color = colors[_colorCombo.SelectedIndex];
+            UpdateConfig(c => c.Colors = color.Colors);
+        }
     }
 
     private void OnModeChanged(object? sender, EventArgs e)
     {
-        var mode = _modeCombo.SelectedIndex switch
+        if (_modeCombo.SelectedIndex < 0)
+            return;
+
+        var mode = GetCurrentMode();
+        var isStarfield = mode == FluidMode.Starfield;
+        var isNebulaOrAurora = mode == FluidMode.Nebula || mode == FluidMode.Aurora;
+
+        // 星空模式选项
+        _meteorCheckBox.Visible = isStarfield;
+        _nebulaCheckBox.Visible = isStarfield;
+
+        // 精度选项（星空和星云/极光模式隐藏）
+        _qualityLabel.Visible = !isStarfield && !isNebulaOrAurora;
+        _qualitySlider.Visible = !isStarfield && !isNebulaOrAurora;
+
+        // 浓度选项（星云/极光模式隐藏，因为这两种效果不使用浓度）
+        _densityLabel.Visible = !isNebulaOrAurora;
+        _densitySlider.Visible = !isNebulaOrAurora;
+
+        // 更新颜色列表
+        UpdateColorList(mode);
+
+        UpdateConfig(c => c.Mode = mode);
+    }
+
+    private void UpdateColorList(FluidMode mode)
+    {
+        var colors = FluidPresets.GetColorsForMode(mode);
+        _colorCombo.Items.Clear();
+        foreach (var color in colors)
+        {
+            _colorCombo.Items.Add(color.Name);
+        }
+        _colorCombo.SelectedIndex = 0;
+    }
+
+    private FluidMode GetCurrentMode()
+    {
+        if (_modeCombo.SelectedIndex < 0)
+            return FluidMode.Fluid;
+
+        return _modeCombo.SelectedIndex switch
         {
             0 => FluidMode.Fluid,
             1 => FluidMode.Starfield,
+            2 => FluidMode.Nebula,
+            3 => FluidMode.Aurora,
             _ => FluidMode.Fluid
         };
-        var showStarfieldOptions = mode == FluidMode.Starfield;
-        _meteorCheckBox.Visible = showStarfieldOptions;
-        _nebulaCheckBox.Visible = showStarfieldOptions;
-        _qualityLabel.Visible = !showStarfieldOptions;
-        _qualitySlider.Visible = !showStarfieldOptions;
-        UpdateConfig(c => c.Mode = mode);
     }
 
     private void OnSpeedChanged(object? sender, EventArgs e)

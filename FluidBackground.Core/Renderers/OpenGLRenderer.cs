@@ -266,6 +266,9 @@ void main()
         SetUniform("iEnablePointer", _config.EnablePointerInteraction ? 1.0f : 0.0f);
         SetUniform("iEnableMeteor", _config.EnableMeteor ? 1.0f : 0.0f);
         SetUniform("iEnableNebula", _config.EnableNebula ? 1.0f : 0.0f);
+        SetUniform("iSeed", _config.Seed);
+        SetUniform("iMotion", 0.5f);
+        SetUniform("iAuroraProfile", (float)_config.AuroraProfile);
 
         var colors = _config.Colors;
         SetUniform("iColor0", colors[0].R, colors[0].G, colors[0].B);
