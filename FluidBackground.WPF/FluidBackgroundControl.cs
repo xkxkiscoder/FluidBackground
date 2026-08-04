@@ -21,6 +21,7 @@ public class FluidBackgroundControl : FrameworkElement
     private double _lastRenderTime;
     private WriteableBitmap? _writeableBitmap;
     private SKBitmap? _cachedBitmap;
+    private bool _wpfBitmapDirty = true;
 
     /// <summary>
     /// 流体配置依赖属性
@@ -92,6 +93,7 @@ public class FluidBackgroundControl : FrameworkElement
         {
             var config = e.NewValue as FluidConfig ?? new FluidConfig();
             control._renderer.UpdateConfig(config);
+            control._wpfBitmapDirty = true;
             control.InvalidateVisual();
         }
     }
@@ -188,16 +190,19 @@ public class FluidBackgroundControl : FrameworkElement
             return;
 
         var time = _stopwatch.Elapsed.TotalSeconds;
+        bool isStaticFrame = Config?.Speed == 0;
 
         // 复用 SKBitmap
         if (_cachedBitmap == null || _cachedBitmap.Width != width || _cachedBitmap.Height != height)
         {
             _cachedBitmap?.Dispose();
             _cachedBitmap = _renderer.RenderToBitmap(time, width, height);
+            _wpfBitmapDirty = true;
         }
-        else
+        else if (!isStaticFrame)
         {
             _renderer.RenderToBitmap(time, width, height, _cachedBitmap);
+            _wpfBitmapDirty = true;
         }
 
         if (_writeableBitmap == null ||
@@ -207,12 +212,18 @@ public class FluidBackgroundControl : FrameworkElement
             _writeableBitmap = new WriteableBitmap(
                 width, height, 96, 96,
                 PixelFormats.Pbgra32, null);
+            _wpfBitmapDirty = true;
         }
 
-        _writeableBitmap.Lock();
-        CopySKBitmapToWriteableBitmap(_cachedBitmap, _writeableBitmap);
-        _writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-        _writeableBitmap.Unlock();
+        // 仅在内容变化时更新 WriteableBitmap
+        if (_wpfBitmapDirty)
+        {
+            _writeableBitmap.Lock();
+            CopySKBitmapToWriteableBitmap(_cachedBitmap, _writeableBitmap);
+            _writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+            _writeableBitmap.Unlock();
+            _wpfBitmapDirty = false;
+        }
 
         drawingContext.DrawImage(_writeableBitmap, new Rect(0, 0, width, height));
     }
@@ -235,13 +246,18 @@ public class FluidBackgroundControl : FrameworkElement
                 var srcRow = src + y * width * 4;
                 var dstRow = dst + y * stride;
 
-                for (int x = 0; x < width; x++)
+                // 每次处理一个像素（4字节），用 uint 操作交换 R 和 B 通道
+                // 源格式: [R, G, B, A] → 目标格式: [B, G, R, A]
+                // uint 位运算: 0xRRGGBBAA → 0xBBGGRRAA = (pixel & 0xFF00FF00) | ((pixel & 0xFF) << 16) | ((pixel >> 16) & 0xFF)
+                uint* src32 = (uint*)srcRow;
+                uint* dst32 = (uint*)dstRow;
+                int x = 0;
+
+                // 主体循环：每次处理 1 个像素，uint 级操作
+                for (int end = width; x < end; x++)
                 {
-                    var offset = x * 4;
-                    dstRow[offset] = srcRow[offset + 2];     // B
-                    dstRow[offset + 1] = srcRow[offset + 1]; // G
-                    dstRow[offset + 2] = srcRow[offset];     // R
-                    dstRow[offset + 3] = srcRow[offset + 3]; // A
+                    uint pixel = src32[x];
+                    dst32[x] = (pixel & 0xFF00FF00u) | ((pixel & 0x000000FFu) << 16) | ((pixel & 0x00FF0000u) >> 16);
                 }
             }
         }

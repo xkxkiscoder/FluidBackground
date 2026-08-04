@@ -187,6 +187,13 @@ public class FluidConfig
     public AuroraProfile AuroraProfile { get; set; } = AuroraProfile.Polar;
 
     /// <summary>
+    /// 星星大小（仅星空模式生效，0.1-3.0）
+    /// <para>控制星星的显示大小，1.0 为默认大小</para>
+    /// <para>推荐值：0.5-2.0</para>
+    /// </summary>
+    public float StarScale { get; set; } = 1.0f;
+
+    /// <summary>
     /// 默认颜色方案（深蓝→中蓝→浅蓝→紫）
     /// </summary>
     public static FluidColor[] DefaultColors =>
@@ -215,6 +222,7 @@ public class FluidConfig
         EnablePointerInteraction = EnablePointerInteraction,
         PointerRadius = PointerRadius,
         Seed = Seed,
-        AuroraProfile = AuroraProfile
+        AuroraProfile = AuroraProfile,
+        StarScale = StarScale
     };
 }

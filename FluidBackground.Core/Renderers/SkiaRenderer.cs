@@ -12,6 +12,10 @@ public class SkiaRenderer : IFluidRenderer
     private float _pointerX = 0.5f;
     private float _pointerY = 0.5f;
     private bool _initialized;
+    private SKBitmap? _cachedBitmap;
+    private int _cachedWidth;
+    private int _cachedHeight;
+    private float _starScale = 1.0f;
 
     public string Name => "SkiaSharp 2D";
     public bool IsAvailable => _initialized;
@@ -19,6 +23,7 @@ public class SkiaRenderer : IFluidRenderer
     public bool Initialize(FluidConfig config)
     {
         _config = config.Clone();
+        _starScale = _config.StarScale;
         _initialized = true;
         return true;
     }
@@ -61,49 +66,66 @@ public class SkiaRenderer : IFluidRenderer
         int sw = Math.Max(1, (int)(width / quality));
         int sh = Math.Max(1, (int)(height / quality));
 
-        using var smallBitmap = new SKBitmap(sw, sh, SKColorType.Rgba8888, SKAlphaType.Premul);
+        // 复用位图缓冲区，避免每帧分配
+        if (_cachedBitmap == null || _cachedWidth != sw || _cachedHeight != sh)
+        {
+            _cachedBitmap?.Dispose();
+            _cachedBitmap = new SKBitmap(sw, sh, SKColorType.Rgba8888, SKAlphaType.Premul);
+            _cachedWidth = sw;
+            _cachedHeight = sh;
+        }
+
         var time = (float)timeSeconds * _config.Speed;
+        float aspect = (float)width / height;
+
+        // 预读取指针位置到局部变量，避免并行循环中的竞态
+        float pX = _pointerX;
+        float pY = _pointerY;
+        bool enablePointer = _config.EnablePointerInteraction;
+        float pointerRadius = _config.PointerRadius;
+        FluidMode mode = _config.Mode;
 
         unsafe
         {
-            var ptr = (uint*)smallBitmap.GetPixels();
-            var stride = smallBitmap.RowBytes / 4;
+            var ptr = (uint*)_cachedBitmap.GetPixels();
+            var stride = _cachedBitmap.RowBytes / 4;
 
-            for (int y = 0; y < sh; y++)
+            // 并行化像素计算：每行写入独立内存区域，无数据竞争
+            System.Threading.Tasks.Parallel.For(0, sh, y =>
             {
+                float v = (float)y / sh;
                 for (int x = 0; x < sw; x++)
                 {
                     float u = (float)x / sw;
-                    float v = (float)y / sh;
-                    ptr[y * stride + x] = CalculatePixel(u, v, time);
+                    ptr[y * stride + x] = CalculatePixel(u, v, time, pX, pY, enablePointer, pointerRadius, mode, aspect);
                 }
-            }
+            });
         }
 
-        using var image = SKImage.FromBitmap(smallBitmap);
+        using var image = SKImage.FromBitmap(_cachedBitmap);
         canvas.DrawImage(image,
-            new SKRect(0, 0, image.Width, image.Height),
+            new SKRect(0, 0, sw, sh),
             new SKRect(0, 0, width, height),
             new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None));
     }
 
-    private uint CalculatePixel(float u, float v, float time)
+    private uint CalculatePixel(float u, float v, float time, float pX, float pY, bool enablePointer, float pointerRadius, FluidMode mode, float aspect)
     {
-        float3 color = _config!.Mode switch
+        float3 color = mode switch
         {
             FluidMode.Fluid => FluidEffect(u, v, time),
-            FluidMode.Starfield => StarfieldEffect(u, v, time),
-            FluidMode.Nebula => NebulaEffect(u, v, time),
-            FluidMode.Aurora => AuroraEffect(u, v, time),
+            FluidMode.Starfield => StarfieldEffect(u, v, time, aspect),
+            FluidMode.Nebula => NebulaEffect(u, v, time, pX, pY),
+            FluidMode.Aurora => AuroraEffect(u, v, time, pX, pY),
             _ => FluidEffect(u, v, time)
         };
 
-        if (_config.EnablePointerInteraction)
+        if (enablePointer)
         {
-            float dx = u - _pointerX;
-            float dy = v - _pointerY;
+            float dx = u - pX;
+            float dy = v - pY;
             float dist = MathF.Sqrt(dx * dx + dy * dy);
-            float inf = SmoothStep(_config.PointerRadius, 0, dist) * 0.3f;
+            float inf = SmoothStep(pointerRadius, 0, dist) * 0.3f;
             color = new float3(
                 color.X * (1 + inf),
                 color.Y * (1 + inf),
@@ -142,12 +164,13 @@ public class SkiaRenderer : IFluidRenderer
         return lowSat * (lum / MathF.Max(lowSatLum, 1e-4f));
     }
 
-    private float3 StarfieldEffect(float u, float v, float t)
+    private float3 StarfieldEffect(float u, float v, float t, float aspect)
     {
         float density = Math.Clamp(_config!.Density, 0f, 1f);
 
         // 深空背景（径向渐暗，更深的夜空基调）
-        float radial = MathF.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)) * 1.6f;
+        float radialU = (u - 0.5f) * aspect;
+        float radial = MathF.Sqrt(radialU * radialU + (v - 0.5f) * (v - 0.5f)) * 1.6f;
         float3 color = Lerp(new float3(0.03f, 0.04f, 0.10f), new float3(0f, 0f, 0f), SmoothStep(0.2f, 1.2f, radial));
 
         // 彩色星云（频率固定，浓度控制浓郁程度）
@@ -164,14 +187,14 @@ public class SkiaRenderer : IFluidRenderer
             var nebulaColor = Lerp(c0, c1, rn);
             nebulaColor = Lerp(nebulaColor, c2, gn);
             nebulaColor = Lerp(nebulaColor, c3, bn);
-            color += nebulaColor * (0.25f * density);
+            color += nebulaColor * (0.8f * density);
         }
 
-        // 星点（两层，网格固定，浓度控制出现概率；亮度恒定）
+        // 星点（两层，密度与大小可控）
         float driftX = t * 0.008f;
         float driftY = t * 0.005f;
-        color += new float3(1f, 1f, 1f) * (StarLayer(u - driftX, v - driftY, 12f, t, density) * 0.9f);
-        color += new float3(0.8f, 0.85f, 1f) * (StarLayer((u - driftX) * 1.7f, (v - driftY) * 1.7f, 20f, t, density) * 0.6f);
+        color += new float3(1f, 1f, 1f) * (StarLayer(u - driftX, v - driftY, 12f, t, density, aspect, _starScale) * 0.9f);
+        color += new float3(0.8f, 0.85f, 1f) * (StarLayer((u - driftX) * 1.7f, (v - driftY) * 1.7f, 20f, t, density, aspect, _starScale) * 0.6f);
 
         // 流星
         if (_config.EnableMeteor)
@@ -188,8 +211,10 @@ public class SkiaRenderer : IFluidRenderer
     /// <param name="u">归一化X坐标（0-1）</param>
     /// <param name="v">归一化Y坐标（0-1）</param>
     /// <param name="t">时间参数</param>
+    /// <param name="pX">指针X坐标</param>
+    /// <param name="pY">指针Y坐标</param>
     /// <returns>像素颜色</returns>
-    private float3 NebulaEffect(float u, float v, float t)
+    private float3 NebulaEffect(float u, float v, float t, float pX, float pY)
     {
         var c = _config!.Colors;
         var c0 = ToFloat3(c[0]);
@@ -200,7 +225,7 @@ public class SkiaRenderer : IFluidRenderer
         float seed = _config.Seed;
         float px = u - 0.5f;
         float py = v - 0.5f;
-        float distanceToPointer = MathF.Sqrt((px - _pointerX) * (px - _pointerX) + (py - _pointerY) * (py - _pointerY));
+        float distanceToPointer = MathF.Sqrt((px - pX) * (px - pX) + (py - pY) * (py - pY));
 
         // 域扭曲（简化计算）
         float influence = MathF.Exp(-distanceToPointer * 4.6f) * 0.5f;
@@ -249,8 +274,10 @@ public class SkiaRenderer : IFluidRenderer
     /// <param name="u">归一化X坐标（0-1）</param>
     /// <param name="v">归一化Y坐标（0-1）</param>
     /// <param name="t">时间参数</param>
+    /// <param name="pX">指针X坐标</param>
+    /// <param name="pY">指针Y坐标</param>
     /// <returns>像素颜色</returns>
-    private float3 AuroraEffect(float u, float v, float t)
+    private float3 AuroraEffect(float u, float v, float t, float pX, float pY)
     {
         var c = _config!.Colors;
         var c0 = ToFloat3(c[0]);
@@ -259,7 +286,7 @@ public class SkiaRenderer : IFluidRenderer
         var c3 = ToFloat3(c.Length > 3 ? c[3] : c[0]);
 
         float seed = _config.Seed;
-        float distanceToPointer = MathF.Sqrt((u - _pointerX) * (u - _pointerX) + (v - _pointerY) * (v - _pointerY));
+        float distanceToPointer = MathF.Sqrt((u - pX) * (u - pX) + (v - pY) * (v - pY));
 
         return _config.AuroraProfile switch
         {
@@ -537,7 +564,7 @@ public class SkiaRenderer : IFluidRenderer
         return (dot * px * py) % 1f;
     }
 
-    private static float StarLayer(float x, float y, float scale, float t, float density)
+    private static float StarLayer(float x, float y, float scale, float t, float density, float aspect, float starScale)
     {
         float px = x * scale;
         float py = y * scale;
@@ -546,8 +573,8 @@ public class SkiaRenderer : IFluidRenderer
         float fx = px - cellX;
         float fy = py - cellY;
 
-        // 出现概率随浓度（浓度越高出星越多）
-        if (Hash(cellX + 3, cellY + 3) > 0.9f * density) return 0f;
+        // 出现概率随密度（密度越高出星越多）
+        if (Hash(cellX + 3, cellY + 3) > (1f - density * 0.18f)) return 0f;
 
         float r1 = Hash(cellX, cellY);
         float r2 = Hash(cellX + 1, cellY);
@@ -555,8 +582,11 @@ public class SkiaRenderer : IFluidRenderer
         float r4 = Hash(cellX + 1, cellY + 1);
         float r5 = Hash(cellX + 2, cellY + 2);
 
-        float dist = MathF.Sqrt((fx - r1) * (fx - r1) + (fy - r2) * (fy - r2));
-        float size = 0.01f + 0.025f * r3;   // 中等大小、边缘柔和
+        // 宽高比校正：让星星在屏幕上显示为正圆
+        float dx = (fx - r1) * aspect;
+        float dy = fy - r2;
+        float dist = MathF.Sqrt(dx * dx + dy * dy);
+        float size = (0.01f + 0.025f * r3) * starScale;   // 星星大小可控
         float brightness = 0.3f + 0.6f * r4;
         float twinkle = 0.5f + 0.5f * MathF.Sin(t * (1.5f + r5 * 2.5f) + r5 * 6.283f);
 
@@ -638,7 +668,11 @@ public class SkiaRenderer : IFluidRenderer
         public static float3 operator *(float b, float3 a) => new(a.X * b, a.Y * b, a.Z * b);
     }
 
-    public void UpdateConfig(FluidConfig config) => _config = config.Clone();
+    public void UpdateConfig(FluidConfig config)
+    {
+        _config = config.Clone();
+        _starScale = config.StarScale;
+    }
 
     public void SetPointerPosition(float x, float y)
     {
@@ -655,6 +689,8 @@ public class SkiaRenderer : IFluidRenderer
 
     public void Dispose()
     {
+        _cachedBitmap?.Dispose();
+        _cachedBitmap = null;
         _initialized = false;
         GC.SuppressFinalize(this);
     }

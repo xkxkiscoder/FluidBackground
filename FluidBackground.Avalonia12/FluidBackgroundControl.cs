@@ -22,6 +22,9 @@ public class FluidBackgroundControl : Control
     private readonly Stopwatch _stopwatch = new();
     private DispatcherTimer? _animationTimer;
     private WriteableBitmap? _writeableBitmap;
+    private SKBitmap? _cachedBitmap;
+    private int _lastWidth;
+    private int _lastHeight;
 
     /// <summary>
     /// 流体配置属性
@@ -133,6 +136,8 @@ public class FluidBackgroundControl : Control
         _renderer = null;
         _writeableBitmap?.Dispose();
         _writeableBitmap = null;
+        _cachedBitmap?.Dispose();
+        _cachedBitmap = null;
     }
 
     private void StartAnimation()
@@ -187,7 +192,16 @@ public class FluidBackgroundControl : Control
 
         var time = _stopwatch.Elapsed.TotalSeconds;
 
-        using var skBitmap = _renderer.RenderToBitmap(time, width, height);
+        // 复用 SKBitmap 缓冲区，避免每帧分配
+        if (_cachedBitmap == null || _cachedBitmap.Width != width || _cachedBitmap.Height != height)
+        {
+            _cachedBitmap?.Dispose();
+            _cachedBitmap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
+            _lastWidth = width;
+            _lastHeight = height;
+        }
+
+        _renderer.RenderToBitmap(time, width, height, _cachedBitmap);
 
         if (_writeableBitmap == null ||
             _writeableBitmap.PixelSize.Width != width ||
@@ -203,9 +217,9 @@ public class FluidBackgroundControl : Control
 
         using (var fb = _writeableBitmap.Lock())
         {
-            var srcPtr = skBitmap.GetPixels();
+            var srcPtr = _cachedBitmap.GetPixels();
             var dstPtr = fb.Address;
-            var srcRowBytes = skBitmap.RowBytes;
+            var srcRowBytes = _cachedBitmap.RowBytes;
             var dstRowBytes = fb.RowBytes;
 
             unsafe
