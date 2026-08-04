@@ -24,15 +24,9 @@ public partial class MainWindow : Window
         UpdateColorList(FluidMode.Fluid);
 
         // 使用默认颜色预设初始化
-        var defaultColor = FluidPresets.GeneralColors[0];
-        PreviewControl.Config = new FluidConfig
-        {
-            Colors = defaultColor.Colors,
-            Speed = 1.0f,
-            Density = 0.3f,
-            Mode = FluidMode.Fluid,
-            EnablePointerInteraction = true
-        };
+        var defaultConfig = FluidPresets.CreateConfig(GeneralColorPreset.DeepSea);
+        defaultConfig.EnablePointerInteraction = true;
+        PreviewControl.Config = defaultConfig;
 
         ArcControl.Config = new LightningArcConfig
         {
@@ -74,13 +68,8 @@ public partial class MainWindow : Window
             return;
 
         var mode = GetCurrentMode();
-        var colors = FluidPresets.GetColorsForMode(mode);
-
-        if (ColorCombo.SelectedIndex < colors.Length)
-        {
-            var color = colors[ColorCombo.SelectedIndex];
-            UpdateConfig(c => c.Colors = color.Colors);
-        }
+        var colors = FluidPresets.GetColors(mode, ColorCombo.SelectedIndex);
+        UpdateConfig(c => c.Colors = colors);
     }
 
     private void OnModeChanged(object? sender, SelectionChangedEventArgs e)
@@ -120,11 +109,11 @@ public partial class MainWindow : Window
 
     private void UpdateColorList(FluidMode mode)
     {
-        var colors = FluidPresets.GetColorsForMode(mode);
+        var colorNames = FluidPresets.GetColorNames(mode);
         ColorCombo.Items.Clear();
-        foreach (var color in colors)
+        foreach (var name in colorNames)
         {
-            ColorCombo.Items.Add(new ComboBoxItem { Content = color.Name });
+            ColorCombo.Items.Add(new ComboBoxItem { Content = name });
         }
         ColorCombo.SelectedIndex = 0;
     }
