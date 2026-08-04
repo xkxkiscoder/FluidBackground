@@ -60,6 +60,7 @@ public partial class MainWindow : Window
         RenderModeCombo.SelectionChanged += OnRenderModeChanged;
         MeteorCheckBox.IsCheckedChanged += OnMeteorChanged;
         NebulaCheckBox.IsCheckedChanged += OnNebulaChanged;
+        StarScaleSlider.ValueChanged += OnStarScaleChanged;
 
         ThemeCombo.SelectionChanged += OnThemeChanged;
         ProgressSlider.ValueChanged += OnProgressChanged;
@@ -87,6 +88,8 @@ public partial class MainWindow : Window
         // 星空模式选项
         MeteorCheckBox.IsVisible = isStarfield;
         NebulaCheckBox.IsVisible = isStarfield;
+        StarScaleLabel.IsVisible = isStarfield;
+        StarScaleSlider.IsVisible = isStarfield;
 
         // 精度选项（星空和星云/极光模式隐藏）
         QualityLabel.IsVisible = !isStarfield && !isNebulaOrAurora;
@@ -155,6 +158,12 @@ public partial class MainWindow : Window
     private void OnNebulaChanged(object? sender, EventArgs e)
     {
         UpdateConfig(c => c.EnableNebula = NebulaCheckBox.IsChecked == true);
+    }
+
+    private void OnStarScaleChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        StarScaleLabel.Text = $"星星大小:{e.NewValue:F1}";
+        UpdateConfig(c => c.StarScale = (float)e.NewValue);
     }
 
     private void OnRenderModeChanged(object? sender, SelectionChangedEventArgs e)

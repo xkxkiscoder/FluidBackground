@@ -28,7 +28,7 @@
                 <!-- 下方调节区域 -->
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                     <Grid ColumnDefinitions="Auto,*,Auto,*"
-                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           Margin="0,8,0,0">
 
                         <!-- 第1行：配色方案 -->
@@ -83,11 +83,19 @@
                                 x:Name="DensitySlider" Minimum="0.1" Maximum="1.0" Value="0.3"
                                 Margin="0,0,0,8"/>
 
-                        <!-- 第6行：效果开关 -->
-                        <CheckBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                        <!-- 第6行：星星大小 -->
+                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                   x:Name="StarScaleLabel" Text="星星大小:1.0" Foreground="#A0A0B4" FontSize="12"
+                                   VerticalAlignment="Center" Margin="0,0,8,8" IsVisible="False"/>
+                        <Slider Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3"
+                                x:Name="StarScaleSlider" Minimum="0.1" Maximum="3.0" Value="1.0"
+                                Margin="0,0,0,8" IsVisible="False"/>
+
+                        <!-- 第7行：效果开关 -->
+                        <CheckBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
                                   x:Name="MeteorCheckBox" Content="流星" IsChecked="True"
                                   IsVisible="False" Foreground="#A0A0B4" Margin="0,0,8,8"/>
-                        <CheckBox Grid.Row="5" Grid.Column="3"
+                        <CheckBox Grid.Row="6" Grid.Column="3"
                                   x:Name="NebulaCheckBox" Content="星云" IsChecked="True"
                                   IsVisible="False" Foreground="#A0A0B4" Margin="0,0,0,8"/>
                     </Grid>

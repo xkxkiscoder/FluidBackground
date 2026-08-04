@@ -22,6 +22,8 @@ public partial class MainForm : Form
     private readonly Label _qualityLabel;
     private readonly CheckBox _meteorCheckBox;
     private readonly CheckBox _nebulaCheckBox;
+    private readonly Label _starScaleLabel;
+    private readonly TrackBar _starScaleSlider;
 
     // —— 闪电电弧控件 ——
     private readonly FluidBackground.WinForms.LightningArcProgressControl _arcControl;
@@ -47,6 +49,8 @@ public partial class MainForm : Form
         _qualityLabel = new Label();
         _meteorCheckBox = new CheckBox();
         _nebulaCheckBox = new CheckBox();
+        _starScaleLabel = new Label();
+        _starScaleSlider = new TrackBar();
 
         _arcControl = new FluidBackground.WinForms.LightningArcProgressControl();
         _themeCombo = new ComboBox();
@@ -185,12 +189,31 @@ public partial class MainForm : Form
         _densitySlider.TickFrequency = 1;
         _fluidTab.Controls.Add(_densitySlider);
 
+        // 星星大小标签
+        _starScaleLabel.Text = "星星大小:1.0";
+        _starScaleLabel.ForeColor = Color.FromArgb(160, 160, 180);
+        _starScaleLabel.Font = new Font("Microsoft YaHei", 9);
+        _starScaleLabel.Location = new Point(20, 440);
+        _starScaleLabel.AutoSize = true;
+        _starScaleLabel.Visible = false;
+        _fluidTab.Controls.Add(_starScaleLabel);
+
+        // 星星大小滑块
+        _starScaleSlider.Location = new Point(100, 435);
+        _starScaleSlider.Width = 580;
+        _starScaleSlider.Minimum = 1;
+        _starScaleSlider.Maximum = 30;
+        _starScaleSlider.Value = 10;
+        _starScaleSlider.TickFrequency = 1;
+        _starScaleSlider.Visible = false;
+        _fluidTab.Controls.Add(_starScaleSlider);
+
         // 流星复选框（仅星空模式显示）
         _meteorCheckBox.Text = "流星";
         _meteorCheckBox.Checked = true;
         _meteorCheckBox.Visible = false;
         _meteorCheckBox.ForeColor = Color.FromArgb(160, 160, 180);
-        _meteorCheckBox.Location = new Point(60, 440);
+        _meteorCheckBox.Location = new Point(60, 480);
         _meteorCheckBox.AutoSize = true;
         _fluidTab.Controls.Add(_meteorCheckBox);
 
@@ -199,7 +222,7 @@ public partial class MainForm : Form
         _nebulaCheckBox.Checked = true;
         _nebulaCheckBox.Visible = false;
         _nebulaCheckBox.ForeColor = Color.FromArgb(160, 160, 180);
-        _nebulaCheckBox.Location = new Point(150, 440);
+        _nebulaCheckBox.Location = new Point(150, 480);
         _nebulaCheckBox.AutoSize = true;
         _fluidTab.Controls.Add(_nebulaCheckBox);
 
@@ -329,6 +352,7 @@ public partial class MainForm : Form
         _renderModeCombo.SelectedIndexChanged += OnRenderModeChanged;
         _meteorCheckBox.CheckedChanged += OnMeteorChanged;
         _nebulaCheckBox.CheckedChanged += OnNebulaChanged;
+        _starScaleSlider.ValueChanged += OnStarScaleChanged;
 
         _themeCombo.SelectedIndexChanged += OnThemeChanged;
         _progressSlider.ValueChanged += OnProgressChanged;
@@ -356,6 +380,8 @@ public partial class MainForm : Form
         // 星空模式选项
         _meteorCheckBox.Visible = isStarfield;
         _nebulaCheckBox.Visible = isStarfield;
+        _starScaleLabel.Visible = isStarfield;
+        _starScaleSlider.Visible = isStarfield;
 
         // 精度选项（星空和星云/极光模式隐藏）
         _qualityLabel.Visible = !isStarfield && !isNebulaOrAurora;
@@ -424,6 +450,12 @@ public partial class MainForm : Form
     private void OnNebulaChanged(object? sender, EventArgs e)
     {
         UpdateConfig(c => c.EnableNebula = _nebulaCheckBox.Checked);
+    }
+
+    private void OnStarScaleChanged(object? sender, EventArgs e)
+    {
+        _starScaleLabel.Text = $"星星大小:{_starScaleSlider.Value / 10.0f:F1}";
+        UpdateConfig(c => c.StarScale = _starScaleSlider.Value / 10.0f);
     }
 
     private void OnRenderModeChanged(object? sender, EventArgs e)

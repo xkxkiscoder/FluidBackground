@@ -88,6 +88,8 @@ public sealed partial class MainWindow : Window
         // 星空模式选项
         MeteorCheckBox.Visibility = isStarfield ? Visibility.Visible : Visibility.Collapsed;
         NebulaCheckBox.Visibility = isStarfield ? Visibility.Visible : Visibility.Collapsed;
+        StarScaleLabel.Visibility = isStarfield ? Visibility.Visible : Visibility.Collapsed;
+        StarScaleSlider.Visibility = isStarfield ? Visibility.Visible : Visibility.Collapsed;
 
         // 精度选项（星空和星云/极光模式隐藏）
         QualityLabel.Visibility = !isStarfield && !isNebulaOrAurora ? Visibility.Visible : Visibility.Collapsed;
@@ -156,6 +158,12 @@ public sealed partial class MainWindow : Window
     private void OnNebulaChanged(object sender, RoutedEventArgs e)
     {
         UpdateConfig(c => c.EnableNebula = NebulaCheckBox.IsChecked == true);
+    }
+
+    private void OnStarScaleChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        StarScaleLabel.Text = $"星星大小:{e.NewValue:F1}";
+        UpdateConfig(c => c.StarScale = (float)e.NewValue);
     }
 
     private void OnRenderModeChanged(object sender, SelectionChangedEventArgs e)

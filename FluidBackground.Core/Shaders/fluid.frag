@@ -22,6 +22,7 @@ uniform float iColorCount;
 uniform float iSeed;
 uniform float iMotion;
 uniform float iAuroraProfile;
+uniform float iStarScale;
 
 // 噪声函数
 float hash(vec2 p) {
@@ -123,7 +124,7 @@ float starLayer(vec2 uv, float scale, float time, float density) {
     float r5 = hash(cell + vec2(2.0, 2.0));
 
     float dist = length(f - vec2(r1, r2));
-    float size = mix(0.01, 0.035, r3);   // 中等大小、边缘柔和
+    float size = mix(0.01, 0.035, r3) * iStarScale;   // 中等大小、边缘柔和
     float brightness = mix(0.3, 0.9, r4);
     float twinkle = 0.5 + 0.5 * sin(time * (1.5 + r5 * 2.5) + r5 * 6.283);
 
