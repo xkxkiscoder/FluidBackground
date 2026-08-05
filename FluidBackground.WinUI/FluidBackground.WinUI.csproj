@@ -13,6 +13,7 @@
     <Platforms>x64;x86;ARM64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

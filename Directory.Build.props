@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)publish</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)publish\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
